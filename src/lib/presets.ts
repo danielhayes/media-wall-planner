@@ -20,11 +20,24 @@ export const PRESETS: Record<ItemType, Preset[]> = {
     { label: '85" TV', width: 74.5, height: 42.9, depth: 2.9 },
     { label: '98" TV', width: 86.0, height: 49.5, depth: 3.5 },
   ],
+  panel: [
+    { label: 'Slat panel 24 × 96', width: 24, height: 96, depth: 1 },
+    { label: 'Slat panel 48 × 96', width: 48, height: 96, depth: 1 },
+    { label: 'Half panel 24 × 48', width: 24, height: 48, depth: 1 },
+    { label: 'Full sheet 48 × 96', width: 48, height: 96, depth: 0.75 },
+    { label: 'Wide accent 96 × 48', width: 96, height: 48, depth: 1 },
+  ],
   console: [
     { label: '60" console', width: 60, height: 22, depth: 16 },
     { label: '70" console', width: 70, height: 24, depth: 16 },
     { label: '80" console', width: 80, height: 26, depth: 18 },
     { label: '96" low console', width: 96, height: 20, depth: 16 },
+  ],
+  base: [
+    { label: '60" base', width: 60, height: 4.75, depth: 20 },
+    { label: '48" base', width: 48, height: 4.75, depth: 20 },
+    { label: '72" base', width: 72, height: 4.75, depth: 20 },
+    { label: '60" tall base', width: 60, height: 8, depth: 20 },
   ],
   rack: [
     { label: '12U rack', width: 21.5, height: 24, depth: 22 },

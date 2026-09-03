@@ -30,14 +30,18 @@ export function footprintArea(item: Item) {
   return halfW * halfD * 4
 }
 
-/** Which item (if any) a floor item is resting on. Supports must have a larger footprint. */
+/**
+ * Which item (if any) a floor item is resting on. Supports must have a larger footprint,
+ * except a console base, which supports anything centered over it. Bases always sit on the floor.
+ */
 export function findSupport(item: Item, items: Item[]): Item | null {
+  if (item.type === 'base') return null
   const myArea = footprintArea(item)
   let best: Item | null = null
   for (const other of items) {
     if (other.id === item.id || !isFloorItem(other)) continue
     const a = footprintArea(other)
-    if (a < myArea || (a === myArea && other.id > item.id)) continue
+    if (other.type !== 'base' && (a < myArea || (a === myArea && other.id > item.id))) continue
     const e = edges(other)
     if (item.x >= e.left && item.x <= e.right && item.z >= e.back && item.z <= e.front) {
       if (!best || e.top > edges(best).top) best = other
@@ -56,23 +60,39 @@ export function minZ(item: Item, wall: Wall) {
   return halfD + offset
 }
 
+/** Front face of the deepest wall panel this wall-mounted item overlaps, or 0 for the bare wall. */
+export function behindFront(item: Item, items: Item[]) {
+  if (item.type === 'panel') return 0
+  let front = 0
+  const e = edges(item)
+  for (const o of items) {
+    if (o.type !== 'panel' || o.id === item.id) continue
+    const oe = edges(o)
+    const overlaps = oe.right > e.left && oe.left < e.right && oe.top > e.bottom && oe.bottom < e.top
+    if (overlaps) front = Math.max(front, o.mountGap + o.depth)
+  }
+  return front
+}
+
 /**
  * Re-resolve gravity and wall constraints for every item.
  * Floor items drop onto the floor or onto the largest item under their center.
  */
-export function settle(items: Item[], wall: Wall): Item[] {
-  // Resolve larger footprints first so supports are settled before what rests on them.
-  const order = [...items].sort((a, b) => footprintArea(b) - footprintArea(a))
+export function settle(items: Item[], wall: Wall, floorDepth = Infinity): Item[] {
+  // Resolve bases, then larger footprints first, so supports are settled before what rests on them.
+  const rank = (i: Item) => (i.type === 'base' ? 1e9 : 0) + footprintArea(i)
+  const order = [...items].sort((a, b) => rank(b) - rank(a))
   const settled = new Map<string, Item>()
   for (const raw of order) {
     let item = { ...raw }
     if (isFloorItem(item)) {
       const support = findSupport(item, [...settled.values()])
       item.y = support ? edges(support).top : 0
-      item.z = Math.max(item.z, minZ(item, wall))
+      const { halfD } = footprint(item)
+      item.z = Math.min(Math.max(item.z, minZ(item, wall)), Math.max(minZ(item, wall), floorDepth - halfD))
     } else {
       item.y = Math.min(Math.max(item.y, 0), Math.max(0, wall.height - item.height))
-      item.z = item.mountGap + item.depth / 2
+      item.z = behindFront(item, items) + item.mountGap + item.depth / 2
     }
     if (item.width <= wall.width) {
       const { halfW } = footprint(item)
@@ -174,6 +194,16 @@ export function snapPosition(
     const yc: Candidate[] = []
     if (snap.centerline) yc.push({ value: wall.height / 2 - item.height / 2, kind: 'centerline', guideAt: wall.height / 2 })
     if (snap.objectCenters) for (const o of others) yc.push({ value: o.y + o.height / 2 - item.height / 2, kind: 'center', guideAt: o.y + o.height / 2 })
+    if (snap.edges) {
+      const edgeYs = [0, wall.height]
+      if (wall.baseboard.enabled) edgeYs.push(wall.baseboard.height)
+      if (wall.crown.enabled) edgeYs.push(wall.height - wall.crown.height)
+      for (const o of others) edgeYs.push(o.y, o.y + o.height)
+      for (const ey of edgeYs) {
+        yc.push({ value: ey, kind: 'edge', guideAt: ey })
+        yc.push({ value: ey - item.height, kind: 'edge', guideAt: ey })
+      }
+    }
     const ry = pick(proposed.y, yc, th, grid)
     y = ry.value
     if (ry.guide) guides.push({ axis: 'y', value: ry.guide.guideAt, kind: ry.guide.kind })
@@ -220,4 +250,23 @@ export function measure(item: Item, project: Project): Measurements {
     front: e.front,
     restingOn: isFloorItem(item) ? findSupport(item, items) : null,
   }
+}
+
+/** Ids of every floor item resting on `id`, directly or through a stack. */
+export function restingOn(id: string, items: Item[]): Set<string> {
+  const carried = new Set<string>()
+  let frontier = [id]
+  while (frontier.length) {
+    const next: string[] = []
+    for (const o of items) {
+      if (o.id === id || carried.has(o.id) || !isFloorItem(o)) continue
+      const support = findSupport(o, items)
+      if (support && frontier.includes(support.id)) {
+        carried.add(o.id)
+        next.push(o.id)
+      }
+    }
+    frontier = next
+  }
+  return carried
 }

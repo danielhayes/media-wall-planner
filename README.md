@@ -20,13 +20,31 @@ produces a static site in `dist/`.
   a project between machines or keep a backup.
 - **Wall** settings: width, height, color, floor depth, and optional baseboard and
   crown moulding with their sizes. Trim depth keeps floor items from sitting inside it.
-- **Objects**: TV, media console, equipment rack, speaker, subwoofer. Pick a size
-  preset, then edit width, height, depth, and color per object.
+- **Objects**: TV, wall panel, media console, console base, equipment rack, speaker,
+  subwoofer.
+  Pick a size preset, then edit width, height, depth, and color per object.
+- **Wall panels** mount on the wall behind the TV at any height. Each panel has a
+  pattern (solid, vertical slats, horizontal slats, or diagonal slats running either
+  way), edge banding width and color, slat width, spacing, relief, and color, and a
+  separate background color. Mirroring a diagonal panel flips its direction, so two
+  mirrored panels form a chevron. A TV that overlaps a panel automatically sits in
+  front of it by its mount gap.
 - **Units** are inches. Inputs accept `65`, `65.5`, `65 1/2`, or `5' 4 1/2"`.
+- **Media console**: rendered as a cabinet with a separate top slab and evenly divided
+  front doors (4 by default, with an adjustable reveal). Doors can be plain or finished
+  with horizontal or vertical wood slats in medium walnut, dark walnut, or black oak;
+  a slat finish wraps both sides of the console too. The top can have its own color.
+- **Console base**: a sled-style metal base (front and back top rails, a closed loop at
+  each end). Width, height, depth, color, and the frame member thickness and depth are
+  editable. Anything centered over a base rests on it regardless of size. Releasing a
+  base under a console, or a console onto a base, centers them on each other, and the
+  inspector has a Center under / Center on base button for the same thing.
 - **Placement**: drag objects in the scene. Floor items move along the floor and
   automatically rest on the floor or on the object beneath them, so a speaker dropped
   onto the console sits on top of it. The TV moves on the wall plane and has a
-  free mount height and a mount gap.
+  free mount height and a mount gap. Dragging a floor item carries anything that was
+  already stacked on it when the drag began, so a base can be slid under a console.
+  Hold Alt/Option while dragging to move an item by itself.
 - **Snapping**: adjustable grid, wall centerline, center-to-center with other objects,
   and edge-to-edge alignment. Guide lines appear while a snap is active. Live gap
   readouts show distance to the wall edges and to neighbouring objects.
@@ -50,6 +68,10 @@ zustand for state with local-storage persistence. There is no backend.
 - `src/lib/geometry.ts` footprints, stacking, wall constraints, snapping, measurements
 - `src/lib/store.ts` project state, actions, persistence
 - `src/lib/presets.ts` common sizes
+- `src/lib/panel.ts` slat layout and clipping for wall panels
 - `src/components/Scene.tsx` canvas, wall, floor, cameras, guides
 - `src/components/ObjectMesh.tsx` a draggable object with labels and gap readouts
+- `src/components/PanelMesh.tsx` wall panel rendering: background, banding, slats
+- `src/components/BaseMesh.tsx` console base rendering
+- `src/components/ConsoleMesh.tsx` media console rendering: carcass, top, doors, slats
 - `src/components/Sidebar.tsx`, `Inspector.tsx`, `Toolbar.tsx` the panels

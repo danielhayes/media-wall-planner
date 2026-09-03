@@ -47,12 +47,18 @@ p { margin: 6px 0; line-height: 1.4; }
 
 .row { display: flex; gap: 6px; margin: 4px 0; }
 .row > select, .row > input { flex: 1; min-width: 0; }
-.buttons > button { flex: 1; }
+.buttons { flex-wrap: wrap; }
+.buttons > button { flex: 1 1 auto; }
 
 .field { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 4px 0; }
 .field-label { color: var(--muted); flex: 1; }
 .field > input, .field > select, .field > .dim { width: 130px; }
 .field > input[type=color] { width: 40px; height: 26px; padding: 0 2px; }
+
+.top-color { display: inline-flex; align-items: center; justify-content: flex-end; gap: 8px; width: 130px; }
+.top-color > input[type=color] { width: 40px; height: 26px; padding: 0 2px; flex: 0 0 40px; }
+.top-color .check { margin: 0; }
+.sidebar, .inspector { overflow-x: hidden; }
 
 .check { display: inline-flex; align-items: center; gap: 6px; margin: 3px 0; cursor: pointer; }
 
@@ -121,3 +127,5 @@ button.active { background: var(--accent-2); color: #041018; border-color: trans
   border-radius: 4px; padding: 1px 5px; font-size: 11px; white-space: nowrap; font-variant-numeric: tabular-nums; user-select: none;
 }
 .measure.bad { color: var(--danger); }
+button.active:hover:not(:disabled) { background: #8fd3ff; border-color: transparent; }
+button.primary:hover:not(:disabled) { background: #ffc26e; border-color: transparent; }

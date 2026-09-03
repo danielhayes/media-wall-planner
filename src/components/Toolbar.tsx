@@ -62,7 +62,7 @@ export function Toolbar() {
           Apply
         </button>
       </form>
-      <div className="group hint muted">Drag to move · right-drag to orbit · scroll to zoom</div>
+      <div className="group hint muted">Drag objects to move · drag empty space to orbit · right-drag to pan · scroll to zoom</div>
     </div>
   )
 }

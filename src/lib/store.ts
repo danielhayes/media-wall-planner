@@ -1,8 +1,8 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { Guide, Item, ItemType, Project, SnapSettings, Wall } from './types'
-import { typeInfo } from './types'
-import { settle } from './geometry'
+import { DEFAULT_BASE, DEFAULT_CONSOLE, DEFAULT_PANEL, isFloorItem, typeInfo } from './types'
+import { findSupport, footprintArea, restingOn, settle } from './geometry'
 import { PRESETS } from './presets'
 
 export type ViewName = 'top' | 'front' | 'iso'
@@ -46,7 +46,10 @@ export function newItem(type: ItemType, overrides: Partial<Item> = {}): Item {
     y: 0,
     z: 20,
     rotation: 0,
-    mountGap: 2,
+    mountGap: type === 'panel' ? 0 : 2,
+    ...(type === 'panel' ? { panel: { ...DEFAULT_PANEL } } : {}),
+    ...(type === 'base' ? { base: { ...DEFAULT_BASE } } : {}),
+    ...(type === 'console' ? { console: { ...DEFAULT_CONSOLE } } : {}),
     ...overrides,
   }
 }
@@ -57,7 +60,11 @@ function sampleProject(): Project {
   const console = PRESETS.console[1]
   const spk = PRESETS.speaker[0]
   const sub = PRESETS.subwoofer[1]
+  const panelW = 24
+  const panelH = 72
   const items: Item[] = [
+    newItem('panel', { name: 'Left panel', width: panelW, height: panelH, depth: 1, x: 72 - panelW / 2, y: 12, panel: { ...DEFAULT_PANEL, pattern: 'diagonal', slatDirection: 'up-right' } }),
+    newItem('panel', { name: 'Right panel', width: panelW, height: panelH, depth: 1, x: 72 + panelW / 2, y: 12, panel: { ...DEFAULT_PANEL, pattern: 'diagonal', slatDirection: 'up-left' } }),
     newItem('console', { name: 'Media console', ...console, x: 72, z: 0.75 + console.depth / 2 }),
     newItem('tv', { name: '65" TV', ...tv, x: 72, y: 30 }),
     newItem('speaker', { name: 'Left speaker', ...spk, x: 72 - console.width / 2 + spk.width / 2 + 2, z: 0.75 + spk.depth / 2 + 2 }),
@@ -100,7 +107,13 @@ interface State {
   updateSnap: (patch: Partial<SnapSettings>) => void
 
   addItem: (type: ItemType, presetIndex?: number) => void
-  updateItem: (id: string, patch: Partial<Item>) => void
+  /**
+   * `carry` controls what moves along with a floor item: a Set of ids, `false` for nothing,
+   * or undefined to carry whatever is currently resting on it.
+   */
+  updateItem: (id: string, patch: Partial<Item>, carry?: Set<string> | false) => void
+  /** Center a base under what rests on it, or center an item on the base it rests on. */
+  alignWithBase: (id: string) => void
   removeItem: (id: string) => void
   duplicateItem: (id: string) => void
   mirrorItem: (id: string) => void
@@ -128,7 +141,7 @@ export const useStore = create<State>()(
           const p = s.projects[s.currentId]
           const patch = fn(p) ?? {}
           const next: Project = { ...p, ...patch, updatedAt: Date.now() }
-          next.items = settle(next.items, next.wall)
+          next.items = settle(next.items, next.wall, next.floorDepth)
           return { projects: { ...s.projects, [p.id]: next } }
         })
 
@@ -174,7 +187,7 @@ export const useStore = create<State>()(
             const raw = JSON.parse(json) as Project
             if (!raw.wall || !Array.isArray(raw.items)) return 'That file does not look like a media wall project.'
             const p: Project = { ...raw, id: uid(), updatedAt: Date.now(), snap: { ...DEFAULT_SNAP, ...raw.snap } }
-            p.items = settle(p.items, p.wall)
+            p.items = settle(p.items, p.wall, p.floorDepth)
             set((s) => ({ projects: { ...s.projects, [p.id]: p }, currentId: p.id, selectedId: null }))
             return null
           } catch {
@@ -194,14 +207,27 @@ export const useStore = create<State>()(
             ...preset,
             name: count ? `${typeInfo(type).label} ${count + 1}` : typeInfo(type).label,
             x: p.wall.width / 2,
-            y: type === 'tv' ? Math.max(0, p.wall.height / 2 - preset.height / 2) : 0,
+            y: type === 'tv' || type === 'panel' ? Math.max(0, p.wall.height / 2 - preset.height / 2) : 0,
             z: (p.wall.baseboard.enabled ? p.wall.baseboard.depth : 0) + preset.depth / 2,
           })
           mutate((pr) => ({ items: [...pr.items, item] }))
           set({ selectedId: item.id })
         },
-        updateItem: (id, patch) =>
-          mutate((p) => ({ items: p.items.map((i) => (i.id === id ? { ...i, ...patch } : i)) })),
+        updateItem: (id, patch, carry) =>
+          mutate((p) => {
+            const src = p.items.find((i) => i.id === id)
+            if (!src) return
+            // Moving a floor item carries along whatever is stacked on it.
+            const dx = patch.x !== undefined ? patch.x - src.x : 0
+            const dz = patch.z !== undefined ? patch.z - src.z : 0
+            const carried =
+              !(dx || dz) || !isFloorItem(src) || carry === false ? new Set<string>() : (carry ?? restingOn(id, p.items))
+            return {
+              items: p.items.map((i) =>
+                i.id === id ? { ...i, ...patch } : carried.has(i.id) ? { ...i, x: i.x + dx, z: i.z + dz } : i,
+              ),
+            }
+          }),
         removeItem: (id) => {
           mutate((p) => ({ items: p.items.filter((i) => i.id !== id) }))
           set((s) => (s.selectedId === id ? { selectedId: null } : {}))
@@ -228,11 +254,37 @@ export const useStore = create<State>()(
                 ? src.name.replace(/right/i, (m) => (m[0] === 'R' ? 'Left' : 'left'))
                 : `${src.name} (mirrored)`
             const copy: Item = { ...src, id: uid(), name, x: p.wall.width - src.x, rotation: -src.rotation }
+            if (copy.panel) {
+              // A mirrored diagonal runs the other way, so two mirrored panels form a chevron.
+              copy.panel = { ...copy.panel, slatDirection: copy.panel.slatDirection === 'up-right' ? 'up-left' : 'up-right' }
+            }
             copyId = copy.id
             return { items: [...p.items, copy] }
           })
           if (copyId) set({ selectedId: copyId })
         },
+        alignWithBase: (id) =>
+          mutate((p) => {
+            const item = p.items.find((i) => i.id === id)
+            if (!item || !isFloorItem(item)) return
+            if (item.type === 'base') {
+              // Center the base under the largest thing resting on it, leaving that thing where it is.
+              const riders = p.items.filter((o) => findSupport(o, p.items)?.id === id)
+              if (!riders.length) return
+              const top = riders.reduce((a, b) => (footprintArea(b) > footprintArea(a) ? b : a))
+              return { items: p.items.map((i) => (i.id === id ? { ...i, x: top.x, z: top.z } : i)) }
+            }
+            const support = findSupport(item, p.items)
+            if (!support || support.type !== 'base') return
+            const dx = support.x - item.x
+            const dz = support.z - item.z
+            const carried = restingOn(id, p.items)
+            return {
+              items: p.items.map((i) =>
+                i.id === id ? { ...i, x: support.x, z: support.z } : carried.has(i.id) ? { ...i, x: i.x + dx, z: i.z + dz } : i,
+              ),
+            }
+          }),
         centerItem: (id) => mutate((p) => ({ items: p.items.map((i) => (i.id === id ? { ...i, x: p.wall.width / 2 } : i)) })),
         applyToeIn: (degrees) =>
           mutate((p) => ({
