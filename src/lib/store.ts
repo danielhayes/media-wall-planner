@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import type { Guide, Item, ItemType, Project, SnapSettings, Wall } from './types'
-import { DEFAULT_BASE, DEFAULT_CONSOLE, DEFAULT_PANEL, DEFAULT_SPEAKER, isFloorItem, typeInfo } from './types'
+import type { FloorDesign, Guide, Item, ItemType, Project, SnapSettings, Wall } from './types'
+import { DEFAULT_BASE, DEFAULT_CONSOLE, DEFAULT_PANEL, DEFAULT_SPEAKER, floorDesign, isFloorItem, typeInfo } from './types'
 import { findSupport, footprintArea, restingOn, settle } from './geometry'
 import { PRESETS } from './presets'
 
@@ -97,6 +97,7 @@ interface State {
   showMeasurements: boolean
   showLabels: boolean
   showShadows: boolean
+  showGrid: boolean
 
   createProject: (name: string) => void
   deleteProject: (id: string) => void
@@ -106,6 +107,7 @@ interface State {
   updateProject: (patch: Partial<Pick<Project, 'floorDepth' | 'snap' | 'toeIn'>>) => void
   updateWall: (patch: Partial<Wall>) => void
   updateSnap: (patch: Partial<SnapSettings>) => void
+  updateFloor: (patch: Partial<FloorDesign>) => void
 
   addItem: (type: ItemType, presetIndex?: number) => void
   /**
@@ -129,6 +131,7 @@ interface State {
   toggleMeasurements: () => void
   toggleLabels: () => void
   toggleShadows: () => void
+  toggleGrid: () => void
 }
 
 export const useStore = create<State>()(
@@ -157,6 +160,7 @@ export const useStore = create<State>()(
         showMeasurements: true,
         showLabels: true,
         showShadows: true,
+        showGrid: true,
 
         createProject: (name) => {
           const now = Date.now()
@@ -198,6 +202,7 @@ export const useStore = create<State>()(
         updateProject: (patch) => mutate(() => patch),
         updateWall: (patch) => mutate((p) => ({ wall: { ...p.wall, ...patch } })),
         updateSnap: (patch) => mutate((p) => ({ snap: { ...p.snap, ...patch } })),
+        updateFloor: (patch) => mutate((p) => ({ floor: { ...floorDesign(p), ...patch } })),
 
         addItem: (type, presetIndex = 0) => {
           const preset = PRESETS[type][presetIndex] ?? PRESETS[type][0]
@@ -307,6 +312,7 @@ export const useStore = create<State>()(
         toggleMeasurements: () => set((s) => ({ showMeasurements: !s.showMeasurements })),
         toggleLabels: () => set((s) => ({ showLabels: !s.showLabels })),
         toggleShadows: () => set((s) => ({ showShadows: !s.showShadows })),
+        toggleGrid: () => set((s) => ({ showGrid: !s.showGrid })),
       }
     },
     {
@@ -318,6 +324,7 @@ export const useStore = create<State>()(
         showMeasurements: s.showMeasurements,
         showLabels: s.showLabels,
         showShadows: s.showShadows,
+        showGrid: s.showGrid,
       }),
     },
   ),

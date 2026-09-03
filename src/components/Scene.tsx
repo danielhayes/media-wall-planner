@@ -1,16 +1,19 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Canvas, useThree } from '@react-three/fiber'
 import { Grid, Line, OrbitControls, OrthographicCamera, PerspectiveCamera } from '@react-three/drei'
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib'
 import * as THREE from 'three'
 import { useProject, useStore } from '../lib/store'
 import type { Project } from '../lib/types'
+import { PLANK_PRESETS, floorDesign } from '../lib/types'
+import { imageTexture, plankTexture } from '../lib/floor'
 import { ObjectMesh } from './ObjectMesh'
 
 export function Scene() {
   const project = useProject()
   const dragging = useStore((s) => s.dragging)
   const projection = useStore((s) => s.projection)
+  const showGrid = useStore((s) => s.showGrid)
   const select = useStore((s) => s.select)
   const view = useStore((s) => s.viewRequest.view)
   const showShadows = useStore((s) => s.showShadows)
@@ -53,7 +56,7 @@ export function Scene() {
       />
       <directionalLight position={[cx + 100, wall.height, floorDepth * 2]} intensity={0.4} />
 
-      <WallAndFloor project={project} />
+      <WallAndFloor project={project} showGrid={showGrid} />
       {project.items.map((item) => (
         <ObjectMesh key={item.id} item={item} />
       ))}
@@ -62,7 +65,7 @@ export function Scene() {
   )
 }
 
-function WallAndFloor({ project }: { project: Project }) {
+function WallAndFloor({ project, showGrid }: { project: Project; showGrid: boolean }) {
   const { wall, floorDepth, snap } = project
   const thickness = 4.5
   const margin = 24
@@ -89,16 +92,8 @@ function WallAndFloor({ project }: { project: Project }) {
           <meshStandardMaterial color={wall.trimColor} roughness={0.7} />
         </mesh>
       )}
-      {/* Floor */}
-      <mesh
-        position={[wall.width / 2, -0.05, floorDepth / 2]}
-        rotation={[-Math.PI / 2, 0, 0]}
-        receiveShadow
-      >
-        <planeGeometry args={[wall.width + margin * 2, floorDepth]} />
-        <meshStandardMaterial color="#8a8378" roughness={1} />
-      </mesh>
-      <Grid
+      <Floor project={project} width={wall.width + margin * 2} />
+      {showGrid && <Grid
         position={[wall.width / 2, 0.02, floorDepth / 2]}
         args={[wall.width + margin * 2, floorDepth]}
         cellSize={gridCell}
@@ -110,7 +105,7 @@ function WallAndFloor({ project }: { project: Project }) {
         fadeDistance={far(project)}
         fadeStrength={0}
         infiniteGrid={false}
-      />
+      />}
       {/* Wall centerline */}
       {snap.centerline && (
         <Line
@@ -142,6 +137,59 @@ function WallAndFloor({ project }: { project: Project }) {
         transparent
       />
     </group>
+  )
+}
+
+/** The floor slab: a solid color, procedural planks, or a user photo tiled at real scale. */
+function Floor({ project, width }: { project: Project; width: number }) {
+  const { wall, floorDepth } = project
+  const design = floorDesign(project)
+  const [image, setImage] = useState<THREE.Texture | null>(null)
+  const rotated = design.direction === 'across'
+
+  useEffect(() => {
+    let live = true
+    if (design.finish === 'image' && design.imageData) {
+      imageTexture(design.imageData, rotated)
+        .then((t) => live && setImage(t))
+        .catch(() => live && setImage(null))
+    }
+    return () => {
+      live = false
+    }
+  }, [design.finish, design.imageData, rotated])
+
+  const preset = PLANK_PRESETS.find((p) => p.id === design.plank) ?? PLANK_PRESETS[0]
+  const plankWidth = design.plankWidth ?? preset.plankWidth
+  const { map, key } = useMemo(() => {
+    if (design.finish === 'planks') {
+      const tile = plankTexture(preset, plankWidth, design.direction)
+      const m = tile.texture.clone()
+      m.repeat.set(width / tile.tileU, floorDepth / tile.tileV)
+      m.needsUpdate = true
+      return { map: m, key: `planks-${preset.id}-${design.direction}` }
+    }
+    if (design.finish === 'image' && design.imageData && image) {
+      const img = image.image as { width?: number; height?: number }
+      const aspect = img && img.width && img.height ? img.height / img.width : 1
+      const m = image.clone()
+      m.repeat.set(width / design.imageSize, floorDepth / (design.imageSize * aspect))
+      m.needsUpdate = true
+      return { map: m, key: 'image' }
+    }
+    return { map: null as THREE.Texture | null, key: 'color' }
+  }, [design.finish, design.direction, design.imageSize, design.imageData, preset, plankWidth, image, width, floorDepth])
+  useEffect(() => () => map?.dispose(), [map])
+
+  return (
+    <mesh position={[wall.width / 2, -0.05, floorDepth / 2]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+      <planeGeometry args={[width, floorDepth]} />
+      {map ? (
+        <meshStandardMaterial key={key} map={map} color="#ffffff" roughness={0.75} />
+      ) : (
+        <meshStandardMaterial key="color" color={design.color} roughness={1} />
+      )}
+    </mesh>
   )
 }
 

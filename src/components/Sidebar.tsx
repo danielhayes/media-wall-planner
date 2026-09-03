@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react'
 import { useProject, useStore } from '../lib/store'
-import { ITEM_TYPES, typeInfo } from '../lib/types'
-import type { ItemType } from '../lib/types'
+import { ITEM_TYPES, PLANK_PRESETS, floorDesign, typeInfo } from '../lib/types'
+import type { FloorDesign, ItemType } from '../lib/types'
 import { PRESETS } from '../lib/presets'
 import { Check, DimInput, Field } from './inputs'
 import { formatInches } from '../lib/units'
@@ -13,8 +13,27 @@ export function Sidebar() {
   const projects = useStore((s) => s.projects)
   const {
     createProject, deleteProject, selectProject, renameProject, importProject,
-    updateWall, updateProject, updateSnap, addItem, select,
+    updateWall, updateProject, updateSnap, updateFloor, addItem, select,
   } = useStore()
+  const floorFileRef = useRef<HTMLInputElement>(null)
+  const [floorError, setFloorError] = useState<string | null>(null)
+  const floor = project ? floorDesign(project) : null
+
+  const onFloorImage = (file: File | undefined) => {
+    if (!file) return
+    if (file.size > 3 * 1024 * 1024) {
+      setFloorError('Please use an image under 3 MB; it is stored with the project.')
+      return
+    }
+    const reader = new FileReader()
+    reader.onload = () => {
+      updateFloor({ imageData: String(reader.result), finish: 'image' })
+      setFloorError(null)
+    }
+    reader.onerror = () => setFloorError('Could not read that image.')
+    reader.readAsDataURL(file)
+    if (floorFileRef.current) floorFileRef.current.value = ''
+  }
   const selectedId = useStore((s) => s.selectedId)
   const [addType, setAddType] = useState<ItemType>('tv')
   const [addPreset, setAddPreset] = useState(0)
@@ -107,6 +126,60 @@ export function Sidebar() {
               </div>
             )}
           </section>
+
+          {floor && (
+            <section>
+              <h2>Floor</h2>
+              <Field label="Finish">
+                <select value={floor.finish} onChange={(e) => updateFloor({ finish: e.target.value as FloorDesign['finish'] })}>
+                  <option value="color">Solid color</option>
+                  <option value="planks">Hardwood planks</option>
+                  <option value="image">Custom image</option>
+                </select>
+              </Field>
+              {floor.finish === 'color' && (
+                <Field label="Color"><input type="color" value={floor.color} onChange={(e) => updateFloor({ color: e.target.value })} /></Field>
+              )}
+              {floor.finish === 'planks' && (
+                <>
+                  <Field label="Wood">
+                    <select value={floor.plank} onChange={(e) => updateFloor({ plank: e.target.value, plankWidth: null })}>
+                      {PLANK_PRESETS.map((p) => (
+                        <option key={p.id} value={p.id}>{p.label}</option>
+                      ))}
+                    </select>
+                  </Field>
+                  <Field label="Plank width">
+                    <DimInput
+                      value={floor.plankWidth ?? (PLANK_PRESETS.find((p) => p.id === floor.plank)?.plankWidth ?? 7)}
+                      min={2}
+                      onChange={(v) => updateFloor({ plankWidth: v })}
+                    />
+                  </Field>
+                </>
+              )}
+              {floor.finish === 'image' && (
+                <>
+                  <div className="row buttons">
+                    <button onClick={() => floorFileRef.current?.click()}>{floor.imageData ? 'Replace image' : 'Choose image…'}</button>
+                    {floor.imageData && <button onClick={() => updateFloor({ imageData: null })}>Clear</button>}
+                    <input ref={floorFileRef} type="file" accept="image/*" hidden onChange={(e) => onFloorImage(e.target.files?.[0])} />
+                  </div>
+                  <Field label="Image covers" hint="Real-world width of one repeat of the image"><DimInput value={floor.imageSize} min={6} onChange={(v) => updateFloor({ imageSize: v })} /></Field>
+                  {!floor.imageData && <p className="muted">Pick a seamless floor photo. It is tiled across the floor at the width above.</p>}
+                  {floorError && <p className="error">{floorError}</p>}
+                </>
+              )}
+              {floor.finish !== 'color' && (
+                <Field label="Direction">
+                  <select value={floor.direction} onChange={(e) => updateFloor({ direction: e.target.value as FloorDesign['direction'] })}>
+                    <option value="along">Along the wall</option>
+                    <option value="across">Out from the wall</option>
+                  </select>
+                </Field>
+              )}
+            </section>
+          )}
 
           <section>
             <h2>Snap</h2>

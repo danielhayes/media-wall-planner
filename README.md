@@ -20,6 +20,10 @@ produces a static site in `dist/`.
   a project between machines or keep a backup.
 - **Wall** settings: width, height, color, floor depth, and optional baseboard and
   crown moulding with their sizes. Trim depth keeps floor items from sitting inside it.
+- **Floor**: a solid color, procedurally generated hardwood planks (dark oak, walnut,
+  white oak, light oak, blonde oak, with adjustable plank width and direction), or a
+  custom photo of your own flooring tiled at a real-world width. The floor grid can be
+  toggled from the toolbar.
 - **Objects**: TV, wall panel, media console, console base, equipment rack, speaker,
   subwoofer.
   Pick a size preset, then edit width, height, depth, and color per object.
@@ -74,6 +78,7 @@ zustand for state with local-storage persistence. There is no backend.
 - `src/lib/presets.ts` common sizes
 - `src/lib/panel.ts` slat layout and clipping for wall panels
 - `src/lib/textures.ts` procedural wood grain and grill cloth textures
+- `src/lib/floor.ts` procedural plank flooring and custom floor image loading
 - `src/components/Scene.tsx` canvas, wall, floor, cameras, guides
 - `src/components/ObjectMesh.tsx` a draggable object with labels and gap readouts
 - `src/components/PanelMesh.tsx` wall panel rendering: background, banding, slats

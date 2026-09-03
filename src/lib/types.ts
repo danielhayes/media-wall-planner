@@ -137,6 +137,58 @@ export interface SnapSettings {
   threshold: number
 }
 
+export type FloorFinish = 'color' | 'planks' | 'image'
+export type PlankDirection = 'along' | 'across'
+
+export interface FloorDesign {
+  finish: FloorFinish
+  color: string
+  /** Plank preset id, see PLANK_PRESETS */
+  plank: string
+  /** Override of the preset's plank width (inches); null uses the preset */
+  plankWidth: number | null
+  /** Planks run along the wall or out from it */
+  direction: PlankDirection
+  /** A user-supplied floor photo as a data URL */
+  imageData: string | null
+  /** Real-world width (inches) covered by one repeat of the image */
+  imageSize: number
+}
+
+export interface PlankPreset {
+  id: string
+  label: string
+  color: string
+  plankWidth: number
+  /** 0..1, how strongly the grain shows */
+  grain: number
+  /** 0..1, lightness spread between planks */
+  variation: number
+  knots: boolean
+}
+
+export const PLANK_PRESETS: PlankPreset[] = [
+  { id: 'dark-oak', label: 'Dark oak', color: '#5b3b24', plankWidth: 7, grain: 0.9, variation: 0.12, knots: true },
+  { id: 'walnut', label: 'Walnut', color: '#7d5136', plankWidth: 8, grain: 0.35, variation: 0.06, knots: false },
+  { id: 'white-oak', label: 'White oak, natural', color: '#d9c7a5', plankWidth: 9, grain: 0.4, variation: 0.06, knots: true },
+  { id: 'light-oak', label: 'Light oak', color: '#bb9469', plankWidth: 8, grain: 0.6, variation: 0.08, knots: true },
+  { id: 'blonde-oak', label: 'Blonde oak', color: '#d2ba92', plankWidth: 9, grain: 0.45, variation: 0.07, knots: true },
+]
+
+export const DEFAULT_FLOOR: FloorDesign = {
+  finish: 'color',
+  color: '#8a8378',
+  plank: 'light-oak',
+  plankWidth: null,
+  direction: 'along',
+  imageData: null,
+  imageSize: 48,
+}
+
+export function floorDesign(project: { floor?: Partial<FloorDesign> }): FloorDesign {
+  return { ...DEFAULT_FLOOR, ...project.floor }
+}
+
 export interface Project {
   id: string
   name: string
@@ -145,6 +197,7 @@ export interface Project {
   wall: Wall
   /** How far the floor extends out from the wall (inches) */
   floorDepth: number
+  floor?: FloorDesign
   snap: SnapSettings
   toeIn: number
   items: Item[]
