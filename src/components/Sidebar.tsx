@@ -41,13 +41,33 @@ export function Sidebar() {
   const [importError, setImportError] = useState<string | null>(null)
   const [confirmDelete, setConfirmDelete] = useState(false)
 
-  const onExport = () => {
+  const onExport = async () => {
     if (!project) return
-    const blob = new Blob([JSON.stringify(project, null, 2)], { type: 'application/json' })
+    const json = JSON.stringify(project, null, 2)
+    const suggestedName = `${project.name.replace(/[^\w-]+/g, '_')}.json`
+    // Chrome and Edge: a real save dialog via the File System Access API.
+    // Other browsers, and users who cancel, fall through to a plain download.
+    const picker = (window as unknown as { showSaveFilePicker?: (o: unknown) => Promise<FileSystemFileHandle> }).showSaveFilePicker
+    if (picker) {
+      try {
+        const handle = await picker.call(window, {
+          suggestedName,
+          types: [{ description: 'Media wall project', accept: { 'application/json': ['.json'] } }],
+        })
+        const writable = await handle.createWritable()
+        await writable.write(json)
+        await writable.close()
+        return
+      } catch (err) {
+        if ((err as DOMException).name === 'AbortError') return
+        // Picker unavailable in this context; use the download fallback.
+      }
+    }
+    const blob = new Blob([json], { type: 'application/json' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `${project.name.replace(/[^\w-]+/g, '_')}.json`
+    a.download = suggestedName
     a.click()
     URL.revokeObjectURL(url)
   }
