@@ -86,3 +86,7 @@ zustand for state with local-storage persistence. There is no backend.
 - `src/components/ConsoleMesh.tsx` media console rendering: carcass, top, doors, slats
 - `src/components/SpeakerMesh.tsx` speaker rendering: veneer, grill, plinth
 - `src/components/Sidebar.tsx`, `Inspector.tsx`, `Toolbar.tsx` the panels
+
+## License
+
+MIT. See [LICENSE](LICENSE).
