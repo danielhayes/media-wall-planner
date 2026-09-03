@@ -11,6 +11,7 @@ import { formatInches } from '../lib/units'
 import { PanelMesh } from './PanelMesh'
 import { BaseMesh } from './BaseMesh'
 import { ConsoleMesh } from './ConsoleMesh'
+import { SpeakerMesh } from './SpeakerMesh'
 
 interface DragState {
   /** Floor plane for floor items, wall plane for wall-mounted items */
@@ -138,6 +139,8 @@ export function ObjectMesh({ item }: { item: Item }) {
         <BaseMesh item={item} selected={selected} />
       ) : item.type === 'console' ? (
         <ConsoleMesh item={item} selected={selected} />
+      ) : item.type === 'speaker' ? (
+        <SpeakerMesh item={item} selected={selected} />
       ) : (
         <mesh position={[0, item.height / 2, 0]} castShadow receiveShadow>
           <boxGeometry args={[item.width, item.height, item.depth]} />
@@ -153,13 +156,6 @@ export function ObjectMesh({ item }: { item: Item }) {
           />
           <meshStandardMaterial attach="material-5" color={colors.body} roughness={0.6} />
           {selected && <Edges color="#ffffff" lineWidth={1.5} />}
-        </mesh>
-      )}
-      {/* Front-direction marker so toe-in is visible from above */}
-      {item.type === 'speaker' && (
-        <mesh position={[0, item.height * 0.7, item.depth / 2 + 0.05]}>
-          <circleGeometry args={[Math.min(item.width, item.height) * 0.3, 24]} />
-          <meshStandardMaterial color="#111" roughness={0.9} />
         </mesh>
       )}
       {showLabels && (

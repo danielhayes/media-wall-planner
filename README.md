@@ -32,8 +32,12 @@ produces a static site in `dist/`.
 - **Units** are inches. Inputs accept `65`, `65.5`, `65 1/2`, or `5' 4 1/2"`.
 - **Media console**: rendered as a cabinet with a separate top slab and evenly divided
   front doors (4 by default, with an adjustable reveal). Doors can be plain or finished
-  with horizontal or vertical wood slats in medium walnut, dark walnut, or black oak;
-  a slat finish wraps both sides of the console too. The top can have its own color.
+  with horizontal or vertical wood slats in Natural Walnut, Chocolate Stained Walnut, or
+  Charcoal Stained Ash, rendered with procedural grain. With a slat finish the sides are
+  solid veneer by default, or slatted. The top can have its own color.
+- **Speakers**: cabinets with an optional wood veneer (American Auburn, American
+  Walnut, or Black Ash, with procedurally generated grain), a recessed fabric grill
+  with its own color and border width, and an optional recessed black plinth.
 - **Console base**: a sled-style metal base (front and back top rails, a closed loop at
   each end). Width, height, depth, color, and the frame member thickness and depth are
   editable. Anything centered over a base rests on it regardless of size. Releasing a
@@ -49,7 +53,7 @@ produces a static site in `dist/`.
   and edge-to-edge alignment. Guide lines appear while a snap is active. Live gap
   readouts show distance to the wall edges and to neighbouring objects.
 - **Views**: Top, Front, and 3D presets, plus an orthographic toggle for
-  floor-plan style views. Right-drag orbits, scroll zooms, middle-drag pans.
+  floor-plan style views. Left-drag on empty space orbits, scroll zooms toward the cursor, right-drag pans.
 - **Symmetry helpers**: Center places an object on the wall centerline. Mirror
   duplicates an object across the centerline. Toe-in rotates every speaker toward
   the wall center by the given number of degrees.
@@ -69,9 +73,11 @@ zustand for state with local-storage persistence. There is no backend.
 - `src/lib/store.ts` project state, actions, persistence
 - `src/lib/presets.ts` common sizes
 - `src/lib/panel.ts` slat layout and clipping for wall panels
+- `src/lib/textures.ts` procedural wood grain and grill cloth textures
 - `src/components/Scene.tsx` canvas, wall, floor, cameras, guides
 - `src/components/ObjectMesh.tsx` a draggable object with labels and gap readouts
 - `src/components/PanelMesh.tsx` wall panel rendering: background, banding, slats
 - `src/components/BaseMesh.tsx` console base rendering
 - `src/components/ConsoleMesh.tsx` media console rendering: carcass, top, doors, slats
+- `src/components/SpeakerMesh.tsx` speaker rendering: veneer, grill, plinth
 - `src/components/Sidebar.tsx`, `Inspector.tsx`, `Toolbar.tsx` the panels

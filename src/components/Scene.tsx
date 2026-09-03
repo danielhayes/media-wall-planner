@@ -34,7 +34,7 @@ export function Scene() {
       ) : (
         <OrthographicCamera key="ortho" makeDefault near={-far} far={far} position={[cx, cy, 300]} zoom={4} />
       )}
-      <OrbitControls makeDefault enabled={!dragging} enableDamping={false} target={[cx, cy, floorDepth / 2]} />
+      <OrbitControls makeDefault enabled={!dragging} enableDamping={false} zoomToCursor target={[cx, cy, floorDepth / 2]} />
       <CameraRig project={project} />
 
       <hemisphereLight intensity={0.55} color="#ffffff" groundColor="#3b3f48" />

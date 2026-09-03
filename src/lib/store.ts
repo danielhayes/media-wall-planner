@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { Guide, Item, ItemType, Project, SnapSettings, Wall } from './types'
-import { DEFAULT_BASE, DEFAULT_CONSOLE, DEFAULT_PANEL, isFloorItem, typeInfo } from './types'
+import { DEFAULT_BASE, DEFAULT_CONSOLE, DEFAULT_PANEL, DEFAULT_SPEAKER, isFloorItem, typeInfo } from './types'
 import { findSupport, footprintArea, restingOn, settle } from './geometry'
 import { PRESETS } from './presets'
 
@@ -50,6 +50,7 @@ export function newItem(type: ItemType, overrides: Partial<Item> = {}): Item {
     ...(type === 'panel' ? { panel: { ...DEFAULT_PANEL } } : {}),
     ...(type === 'base' ? { base: { ...DEFAULT_BASE } } : {}),
     ...(type === 'console' ? { console: { ...DEFAULT_CONSOLE } } : {}),
+    ...(type === 'speaker' ? { speaker: { ...DEFAULT_SPEAKER } } : {}),
     ...overrides,
   }
 }

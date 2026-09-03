@@ -50,6 +50,7 @@ export const PRESETS: Record<ItemType, Preset[]> = {
     { label: 'Large bookshelf', width: 8.5, height: 15, depth: 12 },
     { label: 'Slim tower', width: 8, height: 40, depth: 12 },
     { label: 'Large tower', width: 11, height: 45, depth: 16 },
+    { label: 'Heritage floorstander', width: 25.3, height: 38.1, depth: 15.5 },
     { label: 'Center channel', width: 24, height: 8, depth: 12 },
     { label: 'Soundbar', width: 45, height: 2.5, depth: 4.5 },
   ],

@@ -4,6 +4,7 @@ import type { Item } from '../lib/types'
 import { consoleDesign, woodColor } from '../lib/types'
 import { buildSlatGeometry } from '../lib/panel'
 import type { PanelDesign } from '../lib/types'
+import { WOOD_TILE, tiled, woodTexture } from '../lib/textures'
 
 const INTERIOR = '#151312'
 const HANDLE = '#0b0b0b'
@@ -13,13 +14,14 @@ const RELIEF = 0.25
 
 /**
  * A media console: carcass, separate top slab, evenly divided front doors, and an
- * optional wood slat finish that wraps the doors and both sides.
+ * optional wood slat finish. With a wood finish the sides are veneered (or slatted).
  * Local origin is the bottom center with the front facing +z.
  */
 export function ConsoleMesh({ item, selected }: { item: Item; selected: boolean }) {
   const { width: w, height: h, depth: d, color } = item
   const design = consoleDesign(item)
   const slatted = design.finish !== 'plain'
+  const slatSides = slatted && design.sides === 'slats'
   const wood = woodColor(design.wood)
   const topT = Math.min(TOP_THICKNESS, h * 0.15)
   const bodyH = h - topT
@@ -27,14 +29,15 @@ export function ConsoleMesh({ item, selected }: { item: Item; selected: boolean 
   const doors = Math.max(0, Math.round(design.doors))
   const doorH = Math.max(0.5, bodyH - 2 * gap)
   const doorW = doors > 0 ? (w - (doors + 1) * gap) / doors : 0
-  const sideInset = slatted ? RELIEF : 0
+  const sideInset = slatSides ? RELIEF : 0
   const carcassW = w - 2 * sideInset
   const carcassD = d - (doors > 0 ? DOOR_THICKNESS : 0)
   const topColor = design.topColor ?? color
+  const horizontal = design.finish !== 'slats-vertical'
 
   const slatDesign = useMemo<PanelDesign>(
     () => ({
-      pattern: design.finish === 'slats-vertical' ? 'vertical' : 'horizontal',
+      pattern: horizontal ? 'horizontal' : 'vertical',
       slatDirection: 'up-right',
       edgeWidth: 0,
       edgeColor: wood,
@@ -43,21 +46,44 @@ export function ConsoleMesh({ item, selected }: { item: Item; selected: boolean 
       slatRelief: RELIEF,
       slatColor: wood,
     }),
-    [design.finish, design.slatWidth, design.slatGap, wood],
+    [horizontal, design.slatWidth, design.slatGap, wood],
   )
   const doorSlats = useMemo(
     () => (slatted && doorW > 0.5 ? buildSlatGeometry(doorW, doorH, slatDesign, RELIEF) : null),
     [slatted, doorW, doorH, slatDesign],
   )
   const sideSlats = useMemo(
-    () => (slatted ? buildSlatGeometry(carcassD, doorH, slatDesign, RELIEF) : null),
-    [slatted, carcassD, doorH, slatDesign],
+    () => (slatSides ? buildSlatGeometry(carcassD, doorH, slatDesign, RELIEF) : null),
+    [slatSides, carcassD, doorH, slatDesign],
   )
   useEffect(() => () => doorSlats?.dispose(), [doorSlats])
   useEffect(() => () => sideSlats?.dispose(), [sideSlats])
 
-  const sideColor = slatted ? INTERIOR : color
+  // Extruded slats carry UVs in inches, so one tile of grain spans WOOD_TILE inches.
+  // Grain runs along the slats: rotate it for horizontal slats.
+  const slatMap = useMemo(() => {
+    if (!slatted) return null
+    const t = tiled(woodTexture(wood), 1, 1, WOOD_TILE.w, WOOD_TILE.h)
+    if (horizontal) t.rotation = Math.PI / 2
+    return t
+  }, [slatted, wood, horizontal])
+  useEffect(() => () => slatMap?.dispose(), [slatMap])
+
+  // Veneered sides: per-face maps sized to the side panel so the grain scale matches.
+  const sideMap = useMemo(
+    () => (slatted && !slatSides ? tiled(woodTexture(wood), carcassD, bodyH, WOOD_TILE.w, WOOD_TILE.h) : null),
+    [slatted, slatSides, wood, carcassD, bodyH],
+  )
+  useEffect(() => () => sideMap?.dispose(), [sideMap])
+
   const doorFace = slatted ? INTERIOR : color
+  const sideMaterial = (i: number) =>
+    sideMap ? (
+      <meshStandardMaterial key={`veneer${i}`} attach={`material-${i}`} map={sideMap} color="#ffffff" roughness={0.55} />
+    ) : (
+      <meshStandardMaterial key={`plain${i}`} attach={`material-${i}`} color={slatSides ? INTERIOR : color} roughness={0.7} />
+    )
+  const slatMaterial = <meshStandardMaterial key={`slat-${wood}`} map={slatMap} color="#ffffff" roughness={0.6} />
 
   return (
     <group>
@@ -70,8 +96,8 @@ export function ConsoleMesh({ item, selected }: { item: Item; selected: boolean 
       {/* Carcass */}
       <mesh position={[0, bodyH / 2, -(d - carcassD) / 2]} castShadow receiveShadow>
         <boxGeometry args={[carcassW, bodyH, carcassD]} />
-        <meshStandardMaterial attach="material-0" color={sideColor} roughness={0.7} />
-        <meshStandardMaterial attach="material-1" color={sideColor} roughness={0.7} />
+        {sideMaterial(0)}
+        {sideMaterial(1)}
         <meshStandardMaterial attach="material-2" color={color} roughness={0.7} />
         <meshStandardMaterial attach="material-3" color={color} roughness={0.7} />
         <meshStandardMaterial attach="material-4" color={INTERIOR} roughness={0.9} />
@@ -96,7 +122,7 @@ export function ConsoleMesh({ item, selected }: { item: Item; selected: boolean 
               </mesh>
               {doorSlats && (
                 <mesh geometry={doorSlats} position={[0, 0, d / 2 - RELIEF]} castShadow receiveShadow>
-                  <meshStandardMaterial color={wood} roughness={0.6} />
+                  {slatMaterial}
                 </mesh>
               )}
               {/* Handle strip near the top of each door */}
@@ -117,7 +143,7 @@ export function ConsoleMesh({ item, selected }: { item: Item; selected: boolean 
             castShadow
             receiveShadow
           >
-            <meshStandardMaterial color={wood} roughness={0.6} />
+            {slatMaterial}
           </mesh>
           <mesh
             geometry={sideSlats}
@@ -126,7 +152,7 @@ export function ConsoleMesh({ item, selected }: { item: Item; selected: boolean 
             castShadow
             receiveShadow
           >
-            <meshStandardMaterial color={wood} roughness={0.6} />
+            {slatMaterial}
           </mesh>
         </>
       )}

@@ -1,10 +1,10 @@
 import { useProject, useSelectedItem, useStore } from '../lib/store'
-import { WOODS, baseDesign, consoleDesign, isFloorItem, panelDesign, typeInfo } from '../lib/types'
-import type { BaseDesign, ConsoleDesign, ConsoleFinish, PanelDesign, PanelPattern, SlatDirection, Wood } from '../lib/types'
+import { SPEAKER_WOODS, WOODS, baseDesign, consoleDesign, isFloorItem, panelDesign, speakerDesign, typeInfo } from '../lib/types'
+import type { BaseDesign, ConsoleDesign, ConsoleFinish, PanelDesign, PanelPattern, SlatDirection, SpeakerDesign, SpeakerWood, Wood } from '../lib/types'
 import { PRESETS } from '../lib/presets'
 import { edges, findSupport, measure } from '../lib/geometry'
 import { formatInches } from '../lib/units'
-import { DimInput, Field } from './inputs'
+import { Check, DimInput, Field } from './inputs'
 
 export function Inspector() {
   const project = useProject()
@@ -36,6 +36,9 @@ export function Inspector() {
   const isConsole = item.type === 'console'
   const cons = consoleDesign(item)
   const setCons = (patch: Partial<ConsoleDesign>) => set({ console: { ...cons, ...patch } })
+  const isSpeaker = item.type === 'speaker'
+  const spk = speakerDesign(item)
+  const setSpk = (patch: Partial<SpeakerDesign>) => set({ speaker: { ...spk, ...patch } })
   const isBase = item.type === 'base'
   const base = baseDesign(item)
   const setBase = (patch: Partial<BaseDesign>) => set({ base: { ...base, ...patch } })
@@ -53,7 +56,7 @@ export function Inspector() {
             ))}
           </select>
         </Field>
-        <Field label={isPanel ? 'Background color' : isConsole ? 'Body color' : 'Color'}><input type="color" value={item.color} onChange={(ev) => set({ color: ev.target.value })} /></Field>
+        <Field label={isPanel ? 'Background color' : isConsole ? 'Body color' : isSpeaker ? 'Cabinet color' : 'Color'}><input type="color" value={item.color} onChange={(ev) => set({ color: ev.target.value })} /></Field>
       </section>
 
       {isConsole && (
@@ -81,7 +84,12 @@ export function Inspector() {
               </Field>
               <Field label="Slat width"><DimInput value={cons.slatWidth} min={0.125} onChange={(v) => setCons({ slatWidth: v })} /></Field>
               <Field label="Slat spacing"><DimInput value={cons.slatGap} min={0} onChange={(v) => setCons({ slatGap: v })} /></Field>
-              <p className="muted">Slats cover the doors and both sides of the console.</p>
+              <Field label="Sides">
+                <select value={cons.sides} onChange={(ev) => setCons({ sides: ev.target.value as ConsoleDesign['sides'] })}>
+                  <option value="veneer">Solid veneer</option>
+                  <option value="slats">Slats</option>
+                </select>
+              </Field>
             </>
           )}
           <Field label="Top color">
@@ -93,6 +101,35 @@ export function Inspector() {
               </label>
             </span>
           </Field>
+        </section>
+      )}
+
+      {isSpeaker && (
+        <section>
+          <h2>Speaker design</h2>
+          <Field label="Finish">
+            <select value={spk.finish} onChange={(ev) => setSpk({ finish: ev.target.value as SpeakerDesign['finish'] })}>
+              <option value="plain">Plain (cabinet color)</option>
+              <option value="wood">Wood veneer</option>
+            </select>
+          </Field>
+          {spk.finish === 'wood' && (
+            <Field label="Wood">
+              <select value={spk.wood} onChange={(ev) => setSpk({ wood: ev.target.value as SpeakerWood })}>
+                {SPEAKER_WOODS.map((w) => (
+                  <option key={w.wood} value={w.wood}>{w.label}</option>
+                ))}
+              </select>
+            </Field>
+          )}
+          <Check label="Grill cover" checked={spk.grill} onChange={(v) => setSpk({ grill: v })} />
+          {spk.grill && (
+            <>
+              <Field label="Grill color"><input type="color" value={spk.grillColor} onChange={(ev) => setSpk({ grillColor: ev.target.value })} /></Field>
+              <Field label="Grill border" hint="Cabinet edge left showing around the grill"><DimInput value={spk.grillBorder} min={0} onChange={(v) => setSpk({ grillBorder: v })} /></Field>
+            </>
+          )}
+          <Field label="Plinth height" hint="Recessed black base under the cabinet. 0 for none."><DimInput value={spk.plinthHeight} min={0} onChange={(v) => setSpk({ plinthHeight: v })} /></Field>
         </section>
       )}
 
