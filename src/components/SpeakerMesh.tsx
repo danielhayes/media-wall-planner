@@ -2,7 +2,7 @@ import { useEffect, useMemo } from 'react'
 import { Edges } from '@react-three/drei'
 import * as THREE from 'three'
 import type { Item } from '../lib/types'
-import { speakerDesign, speakerWoodEntry } from '../lib/types'
+import { speakerDesign, woodEntry } from '../lib/types'
 import { useStore } from '../lib/store'
 import { GRILL_TILE, WOOD_TILE, grillTexture, tiled, woodTexture } from '../lib/textures'
 
@@ -21,7 +21,7 @@ export function SpeakerMesh({ item, selected }: { item: Item; selected: boolean 
   const plinth = Math.min(Math.max(0, design.plinthHeight), h * 0.5)
   const cabH = h - plinth
   const wood = design.finish === 'wood'
-  const entry = speakerWoodEntry(design.wood)
+  const entry = woodEntry(design.wood)
   const cabColor = wood ? entry.color : color
   const tv = useStore((s) => s.textureVersion)
   const border = Math.min(Math.max(0, design.grillBorder), w / 2 - 0.1, cabH / 2 - 0.1)

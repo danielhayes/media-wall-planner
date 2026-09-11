@@ -1,6 +1,7 @@
 import { useProject, useSelectedItem, useStore } from '../lib/store'
-import { DIM_LABELS, SPEAKER_WOODS, WOODS, baseDesign, consoleDesign, isFacadeFinish, isFloorItem, isSlatFinish, panelDesign, speakerDesign, typeInfo } from '../lib/types'
-import type { BaseDesign, ConsoleDesign, ConsoleFinish, PanelDesign, PanelPattern, SlatDirection, SpeakerDesign, SpeakerWood, Wood } from '../lib/types'
+import { DEFAULT_CONSOLE, DIM_LABELS, baseDesign, consoleDesign, isFacadeFinish, isFloorItem, isSlatFinish, panelDesign, speakerDesign, typeInfo } from '../lib/types'
+import { WoodSelect } from './WoodSelect'
+import type { BaseDesign, ConsoleDesign, ConsoleFinish, PanelDesign, PanelPattern, SlatDirection, SpeakerDesign } from '../lib/types'
 import { PRESETS } from '../lib/presets'
 import { edges, findSupport, measure } from '../lib/geometry'
 import { formatInches } from '../lib/units'
@@ -51,7 +52,19 @@ export function Inspector() {
         <Field label="Name"><input type="text" value={item.name} onChange={(ev) => set({ name: ev.target.value })} /></Field>
         <Check label="Hidden (kept in project, left out of the scene)" checked={!!item.hidden} onChange={() => toggleHidden(item.id)} />
         <Field label="Preset">
-          <select value="" onChange={(ev) => { const p = PRESETS[item.type][parseInt(ev.target.value, 10)]; if (p) set({ width: p.width, height: p.height, depth: p.depth }) }}>
+          <select
+            value=""
+            onChange={(ev) => {
+              const p = PRESETS[item.type][parseInt(ev.target.value, 10)]
+              if (!p) return
+              set({
+                width: p.width,
+                height: p.height,
+                depth: p.depth,
+                ...(p.console ? { console: { ...DEFAULT_CONSOLE, ...item.console, ...p.console } } : {}),
+              })
+            }}
+          >
             <option value="">Apply a size…</option>
             {PRESETS[item.type].map((p, i) => (
               <option key={p.label} value={i}>{p.label}</option>
@@ -91,17 +104,7 @@ export function Inspector() {
             </select>
           </Field>
           {cons.finish !== 'plain' && (
-            <Field label="Wood">
-              <select value={cons.wood} onChange={(ev) => setCons({ wood: ev.target.value as Wood })}>
-                {[...new Set(WOODS.map((w) => w.series))].map((series) => (
-                  <optgroup key={series} label={series}>
-                    {WOODS.filter((w) => w.series === series).map((w) => (
-                      <option key={w.wood} value={w.wood}>{w.label}</option>
-                    ))}
-                  </optgroup>
-                ))}
-              </select>
-            </Field>
+            <Field label="Wood"><WoodSelect value={cons.wood} onChange={(wood) => setCons({ wood })} /></Field>
           )}
           {isSlatFinish(cons.finish) && (
             <>
@@ -143,13 +146,7 @@ export function Inspector() {
             </select>
           </Field>
           {spk.finish === 'wood' && (
-            <Field label="Wood">
-              <select value={spk.wood} onChange={(ev) => setSpk({ wood: ev.target.value as SpeakerWood })}>
-                {SPEAKER_WOODS.map((w) => (
-                  <option key={w.wood} value={w.wood}>{w.label}</option>
-                ))}
-              </select>
-            </Field>
+            <Field label="Wood"><WoodSelect value={spk.wood} onChange={(wood) => setSpk({ wood })} /></Field>
           )}
           <Check label="Grill cover" checked={spk.grill} onChange={(v) => setSpk({ grill: v })} />
           {spk.grill && (
@@ -191,13 +188,37 @@ export function Inspector() {
             </Field>
           )}
           <Field label="Edge banding" hint="Width of the border strip around the front. 0 for none."><DimInput value={design.edgeWidth} min={0} onChange={(v) => setDesign({ edgeWidth: v })} /></Field>
-          <Field label="Edge color"><input type="color" value={design.edgeColor} onChange={(ev) => setDesign({ edgeColor: ev.target.value })} /></Field>
+          {design.edgeWidth > 0 && (
+            <>
+              <Field label="Edge finish">
+                <select value={design.edgeFinish} onChange={(ev) => setDesign({ edgeFinish: ev.target.value as PanelDesign['edgeFinish'] })}>
+                  <option value="color">Painted color</option>
+                  <option value="wood">Wood grain</option>
+                </select>
+              </Field>
+              {design.edgeFinish === 'wood' ? (
+                <Field label="Edge wood" hint="Veneers the banding and the panel edges, like a wood frame"><WoodSelect value={design.edgeWood} onChange={(edgeWood) => setDesign({ edgeWood })} /></Field>
+              ) : (
+                <Field label="Edge color"><input type="color" value={design.edgeColor} onChange={(ev) => setDesign({ edgeColor: ev.target.value })} /></Field>
+              )}
+            </>
+          )}
           {design.pattern !== 'solid' && (
             <>
+              <Field label="Slat finish">
+                <select value={design.finish} onChange={(ev) => setDesign({ finish: ev.target.value as PanelDesign['finish'] })}>
+                  <option value="color">Painted color</option>
+                  <option value="wood">Wood grain</option>
+                </select>
+              </Field>
+              {design.finish === 'wood' ? (
+                <Field label="Slat wood"><WoodSelect value={design.wood} onChange={(wood) => setDesign({ wood })} /></Field>
+              ) : (
+                <Field label="Slat color"><input type="color" value={design.slatColor} onChange={(ev) => setDesign({ slatColor: ev.target.value })} /></Field>
+              )}
               <Field label="Slat width"><DimInput value={design.slatWidth} min={0.125} onChange={(v) => setDesign({ slatWidth: v })} /></Field>
               <Field label="Slat spacing"><DimInput value={design.slatGap} min={0} onChange={(v) => setDesign({ slatGap: v })} /></Field>
               <Field label="Slat relief" hint="How far the slats stand out from the background"><DimInput value={design.slatRelief} min={0} onChange={(v) => setDesign({ slatRelief: v })} /></Field>
-              <Field label="Slat color"><input type="color" value={design.slatColor} onChange={(ev) => setDesign({ slatColor: ev.target.value })} /></Field>
             </>
           )}
         </section>

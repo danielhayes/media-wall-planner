@@ -1,10 +1,12 @@
-import type { ItemType } from './types'
+import type { ConsoleDesign, ItemType } from './types'
 
 export interface Preset {
   label: string
   width: number
   height: number
   depth: number
+  /** Console presets can also set doors, facade, wood, and plinth */
+  console?: Partial<ConsoleDesign>
 }
 
 /** Approximate typical dimensions (W x H x D, inches). Edit after picking. */
@@ -32,7 +34,10 @@ export const PRESETS: Record<ItemType, Preset[]> = {
     { label: '70" console', width: 70, height: 24, depth: 16 },
     { label: '80" console', width: 80, height: 26, depth: 18 },
     { label: '96" low console', width: 96, height: 20, depth: 16 },
-    { label: 'BDI Elements 4-door', width: 82.5, height: 24, depth: 20 },
+    { label: 'BDI Elements 4-door · Weave', width: 82.5, height: 24, depth: 20, console: { doors: 4, finish: 'weave', wood: 'natural-walnut', plinth: 2.5, topColor: null } },
+    { label: 'BDI Elements 4-door · Constellation', width: 82.5, height: 24, depth: 20, console: { doors: 4, finish: 'constellation', wood: 'toasted-walnut', plinth: 2.5, topColor: null } },
+    { label: 'BDI Elements 4-door · Tune', width: 82.5, height: 24, depth: 20, console: { doors: 4, finish: 'tune', wood: 'washed-oak', plinth: 2.5, topColor: null } },
+    { label: 'BDI Corridor 4-door · slats', width: 79.5, height: 21, depth: 20, console: { doors: 4, finish: 'slats-horizontal', wood: 'natural-walnut', plinth: 0, topColor: '#111111' } },
   ],
   base: [
     { label: '60" base', width: 60, height: 4.75, depth: 20 },
@@ -61,4 +66,9 @@ export const PRESETS: Record<ItemType, Preset[]> = {
     { label: '15" sub', width: 20, height: 22, depth: 22 },
     { label: '18" sub', width: 24, height: 26, depth: 26 },
   ],
+}
+
+/** Just the size of a preset, for spreading into an item */
+export function presetDims(p: Preset) {
+  return { width: p.width, height: p.height, depth: p.depth }
 }

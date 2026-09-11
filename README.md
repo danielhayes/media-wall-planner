@@ -29,8 +29,14 @@ produces a static site in `dist/`.
   Pick a size preset, then edit width, height, depth, and color per object.
 - **Wall panels** mount on the wall behind the TV at any height. Each panel has a
   pattern (solid, vertical slats, horizontal slats, or diagonal slats running either
-  way), edge banding width and color, slat width, spacing, relief, and color, and a
-  separate background color. Mirroring a diagonal panel flips its direction, so two
+  way), edge banding width, slat width, spacing, and relief, and a background color.
+  Slats are either painted or veneered in a wood from the shared registry, and the edge
+  banding independently is painted or veneered in its own wood, so a solid panel can
+  carry a wood frame.
+- **Woods** are one central registry (American Walnut, Natural Walnut, Chocolate Stained
+  Walnut, Toasted Oak, Washed Oak, Black Ash, Charcoal Stained Ash, American Auburn).
+  Any wood is selectable wherever a wood is offered: consoles, speakers, and panels.
+  Adding one entry to the registry makes it available everywhere. Mirroring a diagonal panel flips its direction, so two
   mirrored panels form a chevron. A TV that overlaps a panel automatically sits in
   front of it by its mount gap.
 - **Units** are inches. Inputs accept `65`, `65.5`, `65 1/2`, or `5' 4 1/2"`.
@@ -100,6 +106,7 @@ zustand for state with local-storage persistence. There is no backend.
 - `src/components/ConsoleMesh.tsx` media console rendering: carcass, top, doors, slats
 - `src/components/SpeakerMesh.tsx` speaker rendering: veneer, grill, plinth
 - `src/components/Dimensions.tsx` per-object dimension lines
+- `src/components/WoodSelect.tsx` the shared wood dropdown
 - `src/components/Sidebar.tsx`, `Inspector.tsx`, `Toolbar.tsx` the panels
 
 ## Bundled photos

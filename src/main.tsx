@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.tsx'
 import { useStore } from './lib/store'
-import { SPEAKER_WOODS, WOODS } from './lib/types'
+import { WOODS } from './lib/types'
 import { loadWoodSwatches } from './lib/textures'
 import { loadFacadeMasks } from './lib/facades'
 
@@ -19,7 +19,7 @@ createRoot(document.getElementById('root')!).render(
 // Optional photographic veneer: drop public/woods/<wood id>.jpg files and they replace the
 // procedural grain, e.g. public/woods/natural-walnut.jpg.
 loadWoodSwatches(
-  [...WOODS, ...SPEAKER_WOODS].map((w) => ({ id: w.wood, color: w.color })),
+  WOODS.map((w) => ({ id: w.wood, color: w.color })),
   () => useStore.getState().bumpTextures(),
 )
 

@@ -1,7 +1,17 @@
 export type ItemType = 'tv' | 'panel' | 'console' | 'base' | 'rack' | 'speaker' | 'subwoofer'
 
 export type ConsoleFinish = 'plain' | 'slats-horizontal' | 'slats-vertical' | 'weave' | 'constellation' | 'tune'
-export type Wood = 'natural-walnut' | 'chocolate-walnut' | 'charcoal-ash' | 'toasted-walnut' | 'washed-oak'
+
+/** Every wood grain the app knows about. One registry, selectable wherever a wood is offered. */
+export type Wood =
+  | 'american-walnut'
+  | 'natural-walnut'
+  | 'chocolate-walnut'
+  | 'toasted-walnut'
+  | 'washed-oak'
+  | 'black-ash'
+  | 'charcoal-ash'
+  | 'american-auburn'
 
 export const FACADE_FINISHES: ConsoleFinish[] = ['weave', 'constellation', 'tune']
 
@@ -40,23 +50,33 @@ export interface GrainStyle {
 }
 
 export interface WoodEntry {
-  wood: string
+  wood: Wood
   label: string
   color: string
-  series: string
+  /** Species group used to organize the wood menu */
+  group: string
   grain: GrainStyle
 }
 
-export const WOODS: (WoodEntry & { wood: Wood })[] = [
-  { wood: 'natural-walnut', label: 'Natural Walnut', color: '#8a684a', series: 'Walnut & ash', grain: { contrast: 1.3, arches: true } },
-  { wood: 'chocolate-walnut', label: 'Chocolate Stained Walnut', color: '#4a2c1e', series: 'Walnut & ash', grain: { contrast: 0.9, arches: true } },
-  { wood: 'charcoal-ash', label: 'Charcoal Stained Ash', color: '#3b3735', series: 'Walnut & ash', grain: { contrast: 0.7, arches: false } },
-  { wood: 'toasted-walnut', label: 'Toasted Oak', color: '#5a3f2f', series: 'Elements', grain: { contrast: 0.8, arches: false } },
-  { wood: 'washed-oak', label: 'Washed Oak', color: '#cbbda3', series: 'Elements', grain: { contrast: 0.55, arches: true } },
+/**
+ * The central wood registry. Add a wood here and it becomes available on consoles,
+ * speakers, and wall panels. A photo at public/woods/<wood>.jpg replaces its grain.
+ */
+export const WOODS: WoodEntry[] = [
+  { wood: 'american-walnut', label: 'American Walnut', color: '#8a6238', group: 'Walnut', grain: { contrast: 1, arches: true } },
+  { wood: 'natural-walnut', label: 'Natural Walnut', color: '#8a684a', group: 'Walnut', grain: { contrast: 1.3, arches: true } },
+  { wood: 'chocolate-walnut', label: 'Chocolate Stained Walnut', color: '#4a2c1e', group: 'Walnut', grain: { contrast: 0.9, arches: true } },
+  { wood: 'toasted-walnut', label: 'Toasted Oak', color: '#5a3f2f', group: 'Oak', grain: { contrast: 0.8, arches: false } },
+  { wood: 'washed-oak', label: 'Washed Oak', color: '#cbbda3', group: 'Oak', grain: { contrast: 0.55, arches: true } },
+  { wood: 'black-ash', label: 'Black Ash', color: '#1c1c1c', group: 'Ash', grain: { contrast: 0.5, arches: false } },
+  { wood: 'charcoal-ash', label: 'Charcoal Stained Ash', color: '#3b3735', group: 'Ash', grain: { contrast: 0.7, arches: false } },
+  { wood: 'american-auburn', label: 'American Auburn', color: '#6e3b2c', group: 'Other', grain: { contrast: 1, arches: true } },
 ]
 
-export function woodEntry(wood: Wood) {
-  return WOODS.find((w) => w.wood === wood) ?? WOODS[0]
+export const WOOD_GROUPS = ['Walnut', 'Oak', 'Ash', 'Other']
+
+export function woodEntry(wood: string): WoodEntry {
+  return WOODS.find((w) => w.wood === wood) ?? WOODS[1]
 }
 
 /** Wood names from earlier versions of saved projects */
@@ -70,7 +90,8 @@ export function woodColor(wood: Wood) {
   return WOODS.find((w) => w.wood === wood)?.color ?? WOODS[0].color
 }
 
-export type SpeakerWood = 'american-auburn' | 'american-walnut' | 'black-ash'
+/** Speakers pick from the shared wood registry */
+export type SpeakerWood = Wood
 
 export interface SpeakerDesign {
   finish: 'plain' | 'wood'
@@ -81,20 +102,6 @@ export interface SpeakerDesign {
   grillBorder: number
   /** Height of a recessed black plinth under the cabinet (inches). 0 for none. */
   plinthHeight: number
-}
-
-export const SPEAKER_WOODS: (WoodEntry & { wood: SpeakerWood })[] = [
-  { wood: 'american-auburn', label: 'American Auburn', color: '#6e3b2c', series: 'Speakers', grain: { contrast: 1, arches: true } },
-  { wood: 'american-walnut', label: 'American Walnut', color: '#8a6238', series: 'Speakers', grain: { contrast: 1, arches: true } },
-  { wood: 'black-ash', label: 'Black Ash', color: '#1c1c1c', series: 'Speakers', grain: { contrast: 0.5, arches: false } },
-]
-
-export function speakerWoodEntry(wood: SpeakerWood) {
-  return SPEAKER_WOODS.find((w) => w.wood === wood) ?? SPEAKER_WOODS[1]
-}
-
-export function speakerWoodColor(wood: SpeakerWood) {
-  return speakerWoodEntry(wood).color
 }
 
 export interface BaseDesign {
@@ -111,6 +118,12 @@ export type SlatDirection = 'up-right' | 'up-left'
 export interface PanelDesign {
   pattern: PanelPattern
   slatDirection: SlatDirection
+  /** Slats painted a color, or veneered in a wood from the registry */
+  finish: 'color' | 'wood'
+  wood: Wood
+  /** Edge banding painted a color, or veneered in its own wood (a wood frame) */
+  edgeFinish: 'color' | 'wood'
+  edgeWood: Wood
   /** Width of the edge banding strip around the front (inches). 0 for none. */
   edgeWidth: number
   edgeColor: string
@@ -293,6 +306,10 @@ export function isFloorItem(item: Pick<Item, 'type'>) {
 export const DEFAULT_PANEL: PanelDesign = {
   pattern: 'vertical',
   slatDirection: 'up-right',
+  finish: 'color',
+  wood: 'natural-walnut',
+  edgeFinish: 'color',
+  edgeWood: 'natural-walnut',
   edgeWidth: 1,
   edgeColor: '#7a5a3a',
   slatWidth: 1.5,
@@ -302,7 +319,13 @@ export const DEFAULT_PANEL: PanelDesign = {
 }
 
 export function panelDesign(item: Item): PanelDesign {
-  return { ...DEFAULT_PANEL, ...item.panel }
+  const d = { ...DEFAULT_PANEL, ...item.panel }
+  // Before banding had its own finish, wood slats veneered the banding too.
+  if (item.panel && item.panel.edgeFinish === undefined && item.panel.finish === 'wood') {
+    d.edgeFinish = 'wood'
+    d.edgeWood = item.panel.wood ?? d.wood
+  }
+  return d
 }
 
 export const DEFAULT_BASE: BaseDesign = { thickness: 1, memberDepth: 3 }

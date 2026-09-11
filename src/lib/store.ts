@@ -3,7 +3,7 @@ import { persist } from 'zustand/middleware'
 import type { FloorDesign, Guide, Item, ItemType, Project, SnapSettings, Wall } from './types'
 import { DEFAULT_BASE, DEFAULT_CONSOLE, DEFAULT_PANEL, DEFAULT_SPEAKER, floorDesign, isFloorItem, typeInfo } from './types'
 import { findSupport, footprintArea, restingOn, settle } from './geometry'
-import { PRESETS } from './presets'
+import { PRESETS, presetDims } from './presets'
 
 export type ViewName = 'top' | 'front' | 'iso'
 export type Projection = 'perspective' | 'orthographic'
@@ -57,10 +57,10 @@ export function newItem(type: ItemType, overrides: Partial<Item> = {}): Item {
 
 function sampleProject(): Project {
   const wall = defaultWall()
-  const tv = PRESETS.tv[3]
-  const console = PRESETS.console[1]
-  const spk = PRESETS.speaker[0]
-  const sub = PRESETS.subwoofer[1]
+  const tv = presetDims(PRESETS.tv[3])
+  const console = presetDims(PRESETS.console[1])
+  const spk = presetDims(PRESETS.speaker[0])
+  const sub = presetDims(PRESETS.subwoofer[1])
   const panelW = 24
   const panelH = 72
   const items: Item[] = [
@@ -217,8 +217,11 @@ export const useStore = create<State>()(
           const p = get().currentId ? get().projects[get().currentId!] : null
           if (!p) return
           const count = p.items.filter((i) => i.type === type).length
+          const { console: presetConsole, label: _label, ...dims } = preset
+          void _label
           const item = newItem(type, {
-            ...preset,
+            ...dims,
+            ...(presetConsole ? { console: { ...DEFAULT_CONSOLE, ...presetConsole } } : {}),
             name: count ? `${typeInfo(type).label} ${count + 1}` : typeInfo(type).label,
             x: p.wall.width / 2,
             y: type === 'tv' || type === 'panel' ? Math.max(0, p.wall.height / 2 - preset.height / 2) : 0,

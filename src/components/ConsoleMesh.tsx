@@ -52,6 +52,10 @@ export function ConsoleMesh({ item, selected }: { item: Item; selected: boolean 
     () => ({
       pattern: horizontal ? 'horizontal' : 'vertical',
       slatDirection: 'up-right',
+      finish: 'color',
+      wood: design.wood,
+      edgeFinish: 'color',
+      edgeWood: design.wood,
       edgeWidth: 0,
       edgeColor: wood,
       slatWidth: design.slatWidth,
@@ -59,7 +63,7 @@ export function ConsoleMesh({ item, selected }: { item: Item; selected: boolean 
       slatRelief: RELIEF,
       slatColor: wood,
     }),
-    [horizontal, design.slatWidth, design.slatGap, wood],
+    [horizontal, design.slatWidth, design.slatGap, wood, design.wood],
   )
   const doorSlats = useMemo(
     () => (slatted && doorW > 0.5 ? buildSlatGeometry(doorW, doorH, slatDesign, RELIEF) : null),
