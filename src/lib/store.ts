@@ -99,6 +99,8 @@ interface State {
   showShadows: boolean
   showGrid: boolean
   showDims: boolean
+  /** Bumped when a wood swatch image finishes loading so meshes rebuild their textures */
+  textureVersion: number
 
   createProject: (name: string) => void
   deleteProject: (id: string) => void
@@ -135,6 +137,7 @@ interface State {
   toggleShadows: () => void
   toggleGrid: () => void
   toggleDims: () => void
+  bumpTextures: () => void
 }
 
 export const useStore = create<State>()(
@@ -165,6 +168,7 @@ export const useStore = create<State>()(
         showShadows: true,
         showGrid: true,
         showDims: true,
+        textureVersion: 0,
 
         createProject: (name) => {
           const now = Date.now()
@@ -319,6 +323,7 @@ export const useStore = create<State>()(
         toggleShadows: () => set((s) => ({ showShadows: !s.showShadows })),
         toggleGrid: () => set((s) => ({ showGrid: !s.showGrid })),
         toggleDims: () => set((s) => ({ showDims: !s.showDims })),
+        bumpTextures: () => set((s) => ({ textureVersion: s.textureVersion + 1 })),
       }
     },
     {

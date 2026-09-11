@@ -32,6 +32,7 @@ export const PRESETS: Record<ItemType, Preset[]> = {
     { label: '70" console', width: 70, height: 24, depth: 16 },
     { label: '80" console', width: 80, height: 26, depth: 18 },
     { label: '96" low console', width: 96, height: 20, depth: 16 },
+    { label: 'BDI Elements 4-door', width: 82.5, height: 24, depth: 20 },
   ],
   base: [
     { label: '60" base', width: 60, height: 4.75, depth: 20 },

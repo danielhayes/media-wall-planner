@@ -35,10 +35,17 @@ produces a static site in `dist/`.
   front of it by its mount gap.
 - **Units** are inches. Inputs accept `65`, `65.5`, `65 1/2`, or `5' 4 1/2"`.
 - **Media console**: rendered as a cabinet with a separate top slab and evenly divided
-  front doors (4 by default, with an adjustable reveal). Doors can be plain or finished
-  with horizontal or vertical wood slats in Natural Walnut, Chocolate Stained Walnut, or
-  Charcoal Stained Ash, rendered with procedural grain. With a slat finish the sides are
-  solid veneer by default, or slatted. The top can have its own color.
+  front doors (4 by default, with an adjustable reveal). Door finishes: plain, horizontal
+  or vertical wood slats, or one of three Elements-style facades (Weave, Constellation,
+  Tune) set into a wood frame over dark mesh. Woods: Natural Walnut, Chocolate Stained
+  Walnut, Charcoal Stained Ash, Toasted Oak, and Washed Oak, usable with any finish.
+  Woods render from a veneer photo in `public/woods/` when one is present, otherwise
+  from procedural grain. Facades are traced from door photos in `public/facades/` when
+  present (the exact pattern, rendered in whichever wood is chosen), otherwise drawn
+  procedurally with an adjustable pattern scale. Wood
+  finishes veneer the whole body, and the top matches unless given its own color. An
+  optional recessed black plinth is counted within the console height; set it to 0 and
+  add a console base for a sideboard.
 - **Speakers**: cabinets with an optional wood veneer (American Auburn, American
   Walnut, or Black Ash, with procedurally generated grain), a recessed fabric grill
   with its own color and border width, and an optional recessed black plinth.
@@ -85,6 +92,7 @@ zustand for state with local-storage persistence. There is no backend.
 - `src/lib/panel.ts` slat layout and clipping for wall panels
 - `src/lib/textures.ts` procedural wood grain and grill cloth textures
 - `src/lib/floor.ts` procedural plank flooring and custom floor image loading
+- `src/lib/facades.ts` Weave, Constellation, and Tune door facade textures
 - `src/components/Scene.tsx` canvas, wall, floor, cameras, guides
 - `src/components/ObjectMesh.tsx` a draggable object with labels and gap readouts
 - `src/components/PanelMesh.tsx` wall panel rendering: background, banding, slats
@@ -93,6 +101,13 @@ zustand for state with local-storage persistence. There is no backend.
 - `src/components/SpeakerMesh.tsx` speaker rendering: veneer, grill, plinth
 - `src/components/Dimensions.tsx` per-object dimension lines
 - `src/components/Sidebar.tsx`, `Inspector.tsx`, `Toolbar.tsx` the panels
+
+## Bundled photos
+
+`public/woods/` and `public/facades/` hold veneer swatches and door photos used as
+textures and cutout masks. They are product photography, not covered by the MIT
+license below; keep them for personal use or replace them with your own images of the
+same names.
 
 ## License
 

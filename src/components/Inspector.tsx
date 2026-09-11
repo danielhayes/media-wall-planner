@@ -1,5 +1,5 @@
 import { useProject, useSelectedItem, useStore } from '../lib/store'
-import { DIM_LABELS, SPEAKER_WOODS, WOODS, baseDesign, consoleDesign, isFloorItem, panelDesign, speakerDesign, typeInfo } from '../lib/types'
+import { DIM_LABELS, SPEAKER_WOODS, WOODS, baseDesign, consoleDesign, isFacadeFinish, isFloorItem, isSlatFinish, panelDesign, speakerDesign, typeInfo } from '../lib/types'
 import type { BaseDesign, ConsoleDesign, ConsoleFinish, PanelDesign, PanelPattern, SlatDirection, SpeakerDesign, SpeakerWood, Wood } from '../lib/types'
 import { PRESETS } from '../lib/presets'
 import { edges, findSupport, measure } from '../lib/geometry'
@@ -69,21 +69,42 @@ export function Inspector() {
           </Field>
           <Field label="Door reveal" hint="Gap between and around the doors"><DimInput value={cons.doorGap} min={0} onChange={(v) => setCons({ doorGap: v })} /></Field>
           <Field label="Finish">
-            <select value={cons.finish} onChange={(ev) => setCons({ finish: ev.target.value as ConsoleFinish })}>
+            <select
+              value={cons.finish}
+              onChange={(ev) => {
+                const finish = ev.target.value as ConsoleFinish
+                // Elements facades ship on a short black plinth; keep whatever the user set otherwise.
+                const plinth = isFacadeFinish(finish) && !isFacadeFinish(cons.finish) && cons.plinth === 0 ? 2.5 : cons.plinth
+                setCons({ finish, plinth })
+              }}
+            >
               <option value="plain">Plain doors</option>
-              <option value="slats-horizontal">Horizontal wood slats</option>
-              <option value="slats-vertical">Vertical wood slats</option>
+              <optgroup label="Slats">
+                <option value="slats-horizontal">Horizontal wood slats</option>
+                <option value="slats-vertical">Vertical wood slats</option>
+              </optgroup>
+              <optgroup label="Elements facades">
+                <option value="weave">Weave</option>
+                <option value="constellation">Constellation</option>
+                <option value="tune">Tune</option>
+              </optgroup>
             </select>
           </Field>
           {cons.finish !== 'plain' && (
+            <Field label="Wood">
+              <select value={cons.wood} onChange={(ev) => setCons({ wood: ev.target.value as Wood })}>
+                {[...new Set(WOODS.map((w) => w.series))].map((series) => (
+                  <optgroup key={series} label={series}>
+                    {WOODS.filter((w) => w.series === series).map((w) => (
+                      <option key={w.wood} value={w.wood}>{w.label}</option>
+                    ))}
+                  </optgroup>
+                ))}
+              </select>
+            </Field>
+          )}
+          {isSlatFinish(cons.finish) && (
             <>
-              <Field label="Wood">
-                <select value={cons.wood} onChange={(ev) => setCons({ wood: ev.target.value as Wood })}>
-                  {WOODS.map((w) => (
-                    <option key={w.wood} value={w.wood}>{w.label}</option>
-                  ))}
-                </select>
-              </Field>
               <Field label="Slat width"><DimInput value={cons.slatWidth} min={0.125} onChange={(v) => setCons({ slatWidth: v })} /></Field>
               <Field label="Slat spacing"><DimInput value={cons.slatGap} min={0} onChange={(v) => setCons({ slatGap: v })} /></Field>
               <Field label="Sides">
@@ -94,10 +115,16 @@ export function Inspector() {
               </Field>
             </>
           )}
+          {isFacadeFinish(cons.finish) && (
+            <Field label="Pattern scale" hint="1 is the standard size of the facade pattern">
+              <input type="number" min={0.5} max={2} step={0.1} value={cons.patternScale} onChange={(ev) => setCons({ patternScale: Math.min(2, Math.max(0.5, parseFloat(ev.target.value) || 1)) })} />
+            </Field>
+          )}
+          <Field label="Plinth height" hint="Recessed black base under the cabinet, counted in the total height. Set 0 and add a console base for a sideboard."><DimInput value={cons.plinth} min={0} onChange={(v) => setCons({ plinth: v })} /></Field>
           <Field label="Top color">
             <span className="top-color">
               <input type="color" value={cons.topColor ?? item.color} disabled={cons.topColor === null} onChange={(ev) => setCons({ topColor: ev.target.value })} />
-              <label className="check" title="Use the body color for the top">
+              <label className="check" title="Match the body: veneer for wood finishes, body color otherwise">
                 <input type="checkbox" checked={cons.topColor === null} onChange={(ev) => setCons({ topColor: ev.target.checked ? null : item.color })} />
                 <span>Match</span>
               </label>

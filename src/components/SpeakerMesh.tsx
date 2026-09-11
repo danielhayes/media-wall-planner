@@ -2,7 +2,8 @@ import { useEffect, useMemo } from 'react'
 import { Edges } from '@react-three/drei'
 import * as THREE from 'three'
 import type { Item } from '../lib/types'
-import { speakerDesign, speakerWoodColor } from '../lib/types'
+import { speakerDesign, speakerWoodEntry } from '../lib/types'
+import { useStore } from '../lib/store'
 import { GRILL_TILE, WOOD_TILE, grillTexture, tiled, woodTexture } from '../lib/textures'
 
 const PLINTH = '#0e0e0e'
@@ -20,7 +21,9 @@ export function SpeakerMesh({ item, selected }: { item: Item; selected: boolean 
   const plinth = Math.min(Math.max(0, design.plinthHeight), h * 0.5)
   const cabH = h - plinth
   const wood = design.finish === 'wood'
-  const cabColor = wood ? speakerWoodColor(design.wood) : color
+  const entry = speakerWoodEntry(design.wood)
+  const cabColor = wood ? entry.color : color
+  const tv = useStore((s) => s.textureVersion)
   const border = Math.min(Math.max(0, design.grillBorder), w / 2 - 0.1, cabH / 2 - 0.1)
   const grillW = w - 2 * border
   const grillH = cabH - 2 * border
@@ -28,8 +31,9 @@ export function SpeakerMesh({ item, selected }: { item: Item; selected: boolean 
   // Per-face wood maps so the grain stays the same scale on every face.
   // Box face order: +x, -x, +y, -y, +z, -z.
   const woodMaps = useMemo(() => {
+    void tv // wood textures are rebuilt when a swatch loads
     if (!wood) return null
-    const base = woodTexture(cabColor)
+    const base = woodTexture(cabColor, entry.grain)
     const side = () => tiled(base, d, cabH, WOOD_TILE.w, WOOD_TILE.h)
     const top = () => {
       const t = tiled(base, w, d, WOOD_TILE.w, WOOD_TILE.h)
@@ -39,7 +43,7 @@ export function SpeakerMesh({ item, selected }: { item: Item; selected: boolean 
     }
     const front = () => tiled(base, w, cabH, WOOD_TILE.w, WOOD_TILE.h)
     return [side(), side(), top(), top(), front(), front()]
-  }, [wood, cabColor, w, cabH, d])
+  }, [wood, cabColor, entry.grain, w, cabH, d, tv])
   useEffect(() => () => woodMaps?.forEach((t) => t.dispose()), [woodMaps])
 
   const grillMap = useMemo(

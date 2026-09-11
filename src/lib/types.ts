@@ -1,7 +1,16 @@
 export type ItemType = 'tv' | 'panel' | 'console' | 'base' | 'rack' | 'speaker' | 'subwoofer'
 
-export type ConsoleFinish = 'plain' | 'slats-horizontal' | 'slats-vertical'
-export type Wood = 'natural-walnut' | 'chocolate-walnut' | 'charcoal-ash'
+export type ConsoleFinish = 'plain' | 'slats-horizontal' | 'slats-vertical' | 'weave' | 'constellation' | 'tune'
+export type Wood = 'natural-walnut' | 'chocolate-walnut' | 'charcoal-ash' | 'toasted-walnut' | 'washed-oak'
+
+export const FACADE_FINISHES: ConsoleFinish[] = ['weave', 'constellation', 'tune']
+
+export function isSlatFinish(f: ConsoleFinish) {
+  return f === 'slats-horizontal' || f === 'slats-vertical'
+}
+export function isFacadeFinish(f: ConsoleFinish) {
+  return FACADE_FINISHES.includes(f)
+}
 
 export interface ConsoleDesign {
   /** Number of equal front doors */
@@ -14,15 +23,41 @@ export interface ConsoleDesign {
   slatGap: number
   /** With a slat finish, sides are either solid veneer (as on most cabinets) or slatted too */
   sides: 'veneer' | 'slats'
-  /** Top surface color; null matches the body color */
+  /** Top surface color; null matches the body (veneer for wood finishes) */
   topColor: string | null
+  /** Height of a recessed black plinth under the cabinet, included in the total height. 0 for none. */
+  plinth: number
+  /** Multiplier on the facade pattern size (Weave, Constellation, Tune) */
+  patternScale: number
 }
 
-export const WOODS: { wood: Wood; label: string; color: string }[] = [
-  { wood: 'natural-walnut', label: 'Natural Walnut', color: '#a0703f' },
-  { wood: 'chocolate-walnut', label: 'Chocolate Stained Walnut', color: '#4a2c1e' },
-  { wood: 'charcoal-ash', label: 'Charcoal Stained Ash', color: '#3b3735' },
+/** How the procedural grain is drawn for a wood */
+export interface GrainStyle {
+  /** 0..2, strength of the grain streaks */
+  contrast: number
+  /** Draw cathedral arches (crown-cut figure) */
+  arches: boolean
+}
+
+export interface WoodEntry {
+  wood: string
+  label: string
+  color: string
+  series: string
+  grain: GrainStyle
+}
+
+export const WOODS: (WoodEntry & { wood: Wood })[] = [
+  { wood: 'natural-walnut', label: 'Natural Walnut', color: '#8a684a', series: 'Walnut & ash', grain: { contrast: 1.3, arches: true } },
+  { wood: 'chocolate-walnut', label: 'Chocolate Stained Walnut', color: '#4a2c1e', series: 'Walnut & ash', grain: { contrast: 0.9, arches: true } },
+  { wood: 'charcoal-ash', label: 'Charcoal Stained Ash', color: '#3b3735', series: 'Walnut & ash', grain: { contrast: 0.7, arches: false } },
+  { wood: 'toasted-walnut', label: 'Toasted Oak', color: '#5a3f2f', series: 'Elements', grain: { contrast: 0.8, arches: false } },
+  { wood: 'washed-oak', label: 'Washed Oak', color: '#cbbda3', series: 'Elements', grain: { contrast: 0.55, arches: true } },
 ]
+
+export function woodEntry(wood: Wood) {
+  return WOODS.find((w) => w.wood === wood) ?? WOODS[0]
+}
 
 /** Wood names from earlier versions of saved projects */
 const LEGACY_WOODS: Record<string, Wood> = {
@@ -48,14 +83,18 @@ export interface SpeakerDesign {
   plinthHeight: number
 }
 
-export const SPEAKER_WOODS: { wood: SpeakerWood; label: string; color: string }[] = [
-  { wood: 'american-auburn', label: 'American Auburn', color: '#6e3b2c' },
-  { wood: 'american-walnut', label: 'American Walnut', color: '#8a6238' },
-  { wood: 'black-ash', label: 'Black Ash', color: '#1c1c1c' },
+export const SPEAKER_WOODS: (WoodEntry & { wood: SpeakerWood })[] = [
+  { wood: 'american-auburn', label: 'American Auburn', color: '#6e3b2c', series: 'Speakers', grain: { contrast: 1, arches: true } },
+  { wood: 'american-walnut', label: 'American Walnut', color: '#8a6238', series: 'Speakers', grain: { contrast: 1, arches: true } },
+  { wood: 'black-ash', label: 'Black Ash', color: '#1c1c1c', series: 'Speakers', grain: { contrast: 0.5, arches: false } },
 ]
 
+export function speakerWoodEntry(wood: SpeakerWood) {
+  return SPEAKER_WOODS.find((w) => w.wood === wood) ?? SPEAKER_WOODS[1]
+}
+
 export function speakerWoodColor(wood: SpeakerWood) {
-  return SPEAKER_WOODS.find((w) => w.wood === wood)?.color ?? SPEAKER_WOODS[1].color
+  return speakerWoodEntry(wood).color
 }
 
 export interface BaseDesign {
@@ -281,6 +320,8 @@ export const DEFAULT_CONSOLE: ConsoleDesign = {
   slatGap: 0.5,
   sides: 'veneer',
   topColor: null,
+  plinth: 0,
+  patternScale: 1,
 }
 
 export function consoleDesign(item: Item): ConsoleDesign {
