@@ -61,8 +61,14 @@ produces a static site in `dist/`.
 - **Symmetry helpers**: Center places an object on the wall centerline. Mirror
   duplicates an object across the centerline. Toe-in rotates every speaker toward
   the wall center by the given number of degrees.
+- **Hide**: the eye button in the object list (or H) drops an object from the scene
+  without deleting it. Hidden objects are ignored by snapping, stacking, and gap
+  readouts until shown again.
+- **Dimension annotations**: each object can show any of width, height, depth, and its
+  offset from the left, right, bottom, or top of the wall, chosen per object in the
+  inspector. The Dims toolbar button shows or hides all of them.
 - **Keyboard**: arrow keys nudge the selected object by one grid step (Shift for four),
-  Delete removes it, Escape deselects.
+  Delete removes it, H hides or shows it, Escape deselects.
 
 ## Stack
 
@@ -85,6 +91,7 @@ zustand for state with local-storage persistence. There is no backend.
 - `src/components/BaseMesh.tsx` console base rendering
 - `src/components/ConsoleMesh.tsx` media console rendering: carcass, top, doors, slats
 - `src/components/SpeakerMesh.tsx` speaker rendering: veneer, grill, plinth
+- `src/components/Dimensions.tsx` per-object dimension lines
 - `src/components/Sidebar.tsx`, `Inspector.tsx`, `Toolbar.tsx` the panels
 
 ## License

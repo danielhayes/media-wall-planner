@@ -21,6 +21,7 @@ export default function App() {
       if (!p || !item) return
       if (e.key === 'Escape') return s.select(null)
       if (e.key === 'Delete' || e.key === 'Backspace') return s.removeItem(item.id)
+      if (e.key === 'h' || e.key === 'H') return s.toggleHidden(item.id)
       const step = (p.snap.enabled && p.snap.grid > 0 ? p.snap.grid : 1) * (e.shiftKey ? 4 : 1)
       const floor = isFloorItem(item)
       switch (e.key) {

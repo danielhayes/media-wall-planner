@@ -3,12 +3,13 @@ import { useProject, useStore } from '../lib/store'
 
 export function Toolbar() {
   const project = useProject()
-  const { requestView, setProjection, applyToeIn, toggleMeasurements, toggleLabels, toggleShadows, toggleGrid } = useStore()
+  const { requestView, setProjection, applyToeIn, toggleMeasurements, toggleLabels, toggleShadows, toggleGrid, toggleDims } = useStore()
   const projection = useStore((s) => s.projection)
   const showMeasurements = useStore((s) => s.showMeasurements)
   const showLabels = useStore((s) => s.showLabels)
   const showShadows = useStore((s) => s.showShadows)
   const showGrid = useStore((s) => s.showGrid)
+  const showDims = useStore((s) => s.showDims)
   const view = useStore((s) => s.viewRequest.view)
   const [toeDraft, setToeDraft] = useState<string | null>(null)
   const toe = toeDraft ?? String(project?.toeIn ?? 0)
@@ -38,6 +39,7 @@ export function Toolbar() {
         <button className={showLabels ? 'active' : ''} onClick={toggleLabels}>Labels</button>
         <button className={showMeasurements ? 'active' : ''} onClick={toggleMeasurements}>Gaps</button>
         <button className={showGrid ? 'active' : ''} onClick={toggleGrid} title="Floor grid">Grid</button>
+        <button className={showDims ? 'active' : ''} onClick={toggleDims} title="Dimension annotations chosen per object">Dims</button>
         <button
           className={showShadows ? 'active' : ''}
           onClick={toggleShadows}

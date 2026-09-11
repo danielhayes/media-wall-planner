@@ -82,10 +82,34 @@ export interface PanelDesign {
   slatColor: string
 }
 
+/** Which dimension annotations to draw for an item */
+export interface DimFlags {
+  width?: boolean
+  height?: boolean
+  depth?: boolean
+  left?: boolean
+  right?: boolean
+  bottom?: boolean
+  top?: boolean
+}
+
+export const DIM_LABELS: { key: keyof DimFlags; label: string }[] = [
+  { key: 'width', label: 'Width' },
+  { key: 'height', label: 'Height' },
+  { key: 'depth', label: 'Depth' },
+  { key: 'left', label: 'Offset from left' },
+  { key: 'right', label: 'Offset from right' },
+  { key: 'bottom', label: 'Offset from bottom' },
+  { key: 'top', label: 'Offset from top' },
+]
+
 export interface Item {
   id: string
   type: ItemType
   name: string
+  /** Hidden items stay in the project but are left out of the scene, snapping, and stacking */
+  hidden?: boolean
+  dims?: DimFlags
   /** Dimensions in inches */
   width: number
   height: number

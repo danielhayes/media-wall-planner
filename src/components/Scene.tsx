@@ -8,12 +8,14 @@ import type { Project } from '../lib/types'
 import { PLANK_PRESETS, floorDesign } from '../lib/types'
 import { imageTexture, plankTexture } from '../lib/floor'
 import { ObjectMesh } from './ObjectMesh'
+import { Dimensions } from './Dimensions'
 
 export function Scene() {
   const project = useProject()
   const dragging = useStore((s) => s.dragging)
   const projection = useStore((s) => s.projection)
   const showGrid = useStore((s) => s.showGrid)
+  const showDims = useStore((s) => s.showDims)
   const select = useStore((s) => s.select)
   const view = useStore((s) => s.viewRequest.view)
   const showShadows = useStore((s) => s.showShadows)
@@ -57,9 +59,13 @@ export function Scene() {
       <directionalLight position={[cx + 100, wall.height, floorDepth * 2]} intensity={0.4} />
 
       <WallAndFloor project={project} showGrid={showGrid} />
-      {project.items.map((item) => (
+      {project.items.filter((item) => !item.hidden).map((item) => (
         <ObjectMesh key={item.id} item={item} />
       ))}
+      {showDims &&
+        project.items
+          .filter((item) => !item.hidden && item.dims)
+          .map((item) => <Dimensions key={`dim-${item.id}`} item={item} project={project} />)}
       <Guides project={project} />
     </Canvas>
   )

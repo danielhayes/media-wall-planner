@@ -39,7 +39,7 @@ export function findSupport(item: Item, items: Item[]): Item | null {
   const myArea = footprintArea(item)
   let best: Item | null = null
   for (const other of items) {
-    if (other.id === item.id || !isFloorItem(other)) continue
+    if (other.id === item.id || other.hidden || !isFloorItem(other)) continue
     const a = footprintArea(other)
     if (other.type !== 'base' && (a < myArea || (a === myArea && other.id > item.id))) continue
     const e = edges(other)
@@ -66,7 +66,7 @@ export function behindFront(item: Item, items: Item[]) {
   let front = 0
   const e = edges(item)
   for (const o of items) {
-    if (o.type !== 'panel' || o.id === item.id) continue
+    if (o.type !== 'panel' || o.id === item.id || o.hidden) continue
     const oe = edges(o)
     const overlaps = oe.right > e.left && oe.left < e.right && oe.top > e.bottom && oe.bottom < e.top
     if (overlaps) front = Math.max(front, o.mountGap + o.depth)
@@ -141,7 +141,7 @@ export function snapPosition(
   snap: SnapSettings = project.snap,
 ): SnapResult {
   const { wall } = project
-  const others = project.items.filter((o) => o.id !== item.id)
+  const others = project.items.filter((o) => o.id !== item.id && !o.hidden)
   const { halfW, halfD } = footprint(item)
   const guides: Guide[] = []
   if (!snap.enabled) return { ...proposed, guides }
@@ -228,7 +228,7 @@ export function measure(item: Item, project: Project): Measurements {
   let leftNeighbor: Measurements['leftNeighbor'] = null
   let rightNeighbor: Measurements['rightNeighbor'] = null
   for (const o of items) {
-    if (o.id === item.id) continue
+    if (o.id === item.id || o.hidden) continue
     const oe = edges(o)
     // Only consider things that share some vertical range (so a TV above a console doesn't count).
     const verticalOverlap = oe.top > e.bottom && oe.bottom < e.top

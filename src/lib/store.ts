@@ -98,6 +98,7 @@ interface State {
   showLabels: boolean
   showShadows: boolean
   showGrid: boolean
+  showDims: boolean
 
   createProject: (name: string) => void
   deleteProject: (id: string) => void
@@ -118,6 +119,7 @@ interface State {
   /** Center a base under what rests on it, or center an item on the base it rests on. */
   alignWithBase: (id: string) => void
   removeItem: (id: string) => void
+  toggleHidden: (id: string) => void
   duplicateItem: (id: string) => void
   mirrorItem: (id: string) => void
   centerItem: (id: string) => void
@@ -132,6 +134,7 @@ interface State {
   toggleLabels: () => void
   toggleShadows: () => void
   toggleGrid: () => void
+  toggleDims: () => void
 }
 
 export const useStore = create<State>()(
@@ -161,6 +164,7 @@ export const useStore = create<State>()(
         showLabels: true,
         showShadows: true,
         showGrid: true,
+        showDims: true,
 
         createProject: (name) => {
           const now = Date.now()
@@ -238,6 +242,7 @@ export const useStore = create<State>()(
           mutate((p) => ({ items: p.items.filter((i) => i.id !== id) }))
           set((s) => (s.selectedId === id ? { selectedId: null } : {}))
         },
+        toggleHidden: (id) => mutate((p) => ({ items: p.items.map((i) => (i.id === id ? { ...i, hidden: !i.hidden } : i)) })),
         duplicateItem: (id) => {
           let copyId: string | null = null
           mutate((p) => {
@@ -313,6 +318,7 @@ export const useStore = create<State>()(
         toggleLabels: () => set((s) => ({ showLabels: !s.showLabels })),
         toggleShadows: () => set((s) => ({ showShadows: !s.showShadows })),
         toggleGrid: () => set((s) => ({ showGrid: !s.showGrid })),
+        toggleDims: () => set((s) => ({ showDims: !s.showDims })),
       }
     },
     {
@@ -325,6 +331,7 @@ export const useStore = create<State>()(
         showLabels: s.showLabels,
         showShadows: s.showShadows,
         showGrid: s.showGrid,
+        showDims: s.showDims,
       }),
     },
   ),

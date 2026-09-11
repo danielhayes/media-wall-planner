@@ -13,7 +13,7 @@ export function Sidebar() {
   const projects = useStore((s) => s.projects)
   const {
     createProject, deleteProject, selectProject, renameProject, importProject,
-    updateWall, updateProject, updateSnap, updateFloor, addItem, select,
+    updateWall, updateProject, updateSnap, updateFloor, addItem, select, toggleHidden,
   } = useStore()
   const floorFileRef = useRef<HTMLInputElement>(null)
   const [floorError, setFloorError] = useState<string | null>(null)
@@ -239,10 +239,17 @@ export function Sidebar() {
             <ul className="items">
               {project.items.length === 0 && <li className="muted">No objects yet.</li>}
               {project.items.map((i) => (
-                <li key={i.id} className={i.id === selectedId ? 'active' : ''} onClick={() => select(i.id)}>
+                <li key={i.id} className={`${i.id === selectedId ? 'active' : ''}${i.hidden ? ' hidden-item' : ''}`} onClick={() => select(i.id)}>
                   <span className="swatch" style={{ background: i.color }} />
                   <span className="name">{i.name}</span>
                   <span className="muted">{typeInfo(i.type).label}</span>
+                  <button
+                    className={`eye${i.hidden ? ' off' : ''}`}
+                    title={i.hidden ? 'Show in scene' : 'Hide from scene (keeps the object)'}
+                    onClick={(e) => { e.stopPropagation(); toggleHidden(i.id) }}
+                  >
+                    {i.hidden ? '◌' : '◉'}
+                  </button>
                 </li>
               ))}
             </ul>

@@ -129,3 +129,14 @@ button.active { background: var(--accent-2); color: #041018; border-color: trans
 .measure.bad { color: var(--danger); }
 button.active:hover:not(:disabled) { background: #8fd3ff; border-color: transparent; }
 button.primary:hover:not(:disabled) { background: #ffc26e; border-color: transparent; }
+
+.items li.hidden-item .name, .items li.hidden-item .muted { opacity: 0.45; }
+.items li.hidden-item .swatch { opacity: 0.35; }
+.eye { height: 20px; padding: 0 5px; font-size: 12px; line-height: 1; border-color: transparent; background: transparent; color: var(--accent-2); }
+.eye.off { color: var(--muted); }
+.eye:hover { background: #2b3039 !important; }
+.dim-label {
+  background: rgba(20, 22, 27, 0.92); color: #7fd8ff;
+  border: 1px solid rgba(127, 216, 255, 0.5); border-radius: 4px;
+  padding: 1px 6px; font-size: 11px; white-space: nowrap; font-variant-numeric: tabular-nums; user-select: none;
+}

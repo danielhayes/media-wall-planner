@@ -1,5 +1,5 @@
 import { useProject, useSelectedItem, useStore } from '../lib/store'
-import { SPEAKER_WOODS, WOODS, baseDesign, consoleDesign, isFloorItem, panelDesign, speakerDesign, typeInfo } from '../lib/types'
+import { DIM_LABELS, SPEAKER_WOODS, WOODS, baseDesign, consoleDesign, isFloorItem, panelDesign, speakerDesign, typeInfo } from '../lib/types'
 import type { BaseDesign, ConsoleDesign, ConsoleFinish, PanelDesign, PanelPattern, SlatDirection, SpeakerDesign, SpeakerWood, Wood } from '../lib/types'
 import { PRESETS } from '../lib/presets'
 import { edges, findSupport, measure } from '../lib/geometry'
@@ -9,7 +9,8 @@ import { Check, DimInput, Field } from './inputs'
 export function Inspector() {
   const project = useProject()
   const item = useSelectedItem()
-  const { updateItem, removeItem, duplicateItem, mirrorItem, centerItem, alignWithBase } = useStore()
+  const { updateItem, removeItem, duplicateItem, mirrorItem, centerItem, alignWithBase, toggleHidden } = useStore()
+  const showDims = useStore((s) => s.showDims)
 
   if (!project || !item) {
     return (
@@ -17,7 +18,7 @@ export function Inspector() {
         <section>
           <h2>Selection</h2>
           <p className="muted">Click an object in the scene or list to edit it. Drag objects to move them.</p>
-          <p className="muted">Keys: arrows nudge by one grid step (Shift for 4×). Delete removes. Escape deselects.</p>
+          <p className="muted">Keys: arrows nudge by one grid step (Shift for 4×). Delete removes. H hides or shows. Escape deselects.</p>
           <p className="muted">Dragging a floor item carries whatever is stacked on it. Hold Alt/Option to drag it alone.</p>
         </section>
       </aside>
@@ -48,6 +49,7 @@ export function Inspector() {
       <section>
         <h2>{typeInfo(item.type).label}</h2>
         <Field label="Name"><input type="text" value={item.name} onChange={(ev) => set({ name: ev.target.value })} /></Field>
+        <Check label="Hidden (kept in project, left out of the scene)" checked={!!item.hidden} onChange={() => toggleHidden(item.id)} />
         <Field label="Preset">
           <select value="" onChange={(ev) => { const p = PRESETS[item.type][parseInt(ev.target.value, 10)]; if (p) set({ width: p.width, height: p.height, depth: p.depth }) }}>
             <option value="">Apply a size…</option>
@@ -201,6 +203,20 @@ export function Inspector() {
         <Field label="Rotation (°)">
           <input type="number" step={1} value={item.rotation} onChange={(ev) => set({ rotation: parseFloat(ev.target.value) || 0 })} />
         </Field>
+      </section>
+
+      <section>
+        <h2>Dimensions shown</h2>
+        {DIM_LABELS.map(({ key, label }) => (
+          <Check
+            key={key}
+            label={label}
+            checked={!!item.dims?.[key]}
+            onChange={(v) => set({ dims: { ...item.dims, [key]: v } })}
+          />
+        ))}
+        {!showDims && <p className="muted">Dimension annotations are switched off in the toolbar (Dims).</p>}
+        {item.hidden && <p className="muted">Hidden objects do not show their dimensions.</p>}
       </section>
 
       <section>
