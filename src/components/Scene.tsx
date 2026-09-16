@@ -8,14 +8,14 @@ import type { Project } from '../lib/types'
 import { PLANK_PRESETS, floorDesign } from '../lib/types'
 import { imageTexture, plankTexture } from '../lib/floor'
 import { ObjectMesh } from './ObjectMesh'
-import { Dimensions } from './Dimensions'
+import { MeasureTool, Measurements } from './MeasureTool'
 
 export function Scene() {
   const project = useProject()
   const dragging = useStore((s) => s.dragging)
   const projection = useStore((s) => s.projection)
   const showGrid = useStore((s) => s.showGrid)
-  const showDims = useStore((s) => s.showDims)
+  const measureMode = useStore((s) => s.measureMode)
   const select = useStore((s) => s.select)
   const view = useStore((s) => s.viewRequest.view)
   const showShadows = useStore((s) => s.showShadows)
@@ -31,15 +31,29 @@ export function Scene() {
     <Canvas
       shadows
       dpr={[1, 2]}
-      onPointerMissed={() => select(null)}
-      style={{ background: 'linear-gradient(#1a1d24, #0f1115)' }}
+      onPointerMissed={() => {
+        if (!measureMode) select(null)
+      }}
+      style={{ background: 'linear-gradient(#1a1d24, #0f1115)', cursor: measureMode ? 'crosshair' : undefined }}
     >
       {projection === 'perspective' ? (
         <PerspectiveCamera key="persp" makeDefault fov={40} near={1} far={far} position={[cx, cy, 300]} />
       ) : (
         <OrthographicCamera key="ortho" makeDefault near={-far} far={far} position={[cx, cy, 300]} zoom={4} />
       )}
-      <OrbitControls makeDefault enabled={!dragging} enableDamping={false} zoomToCursor target={[cx, cy, floorDepth / 2]} />
+      <OrbitControls
+        makeDefault
+        enabled={!dragging}
+        enableDamping={false}
+        zoomToCursor
+        target={[cx, cy, floorDepth / 2]}
+        // While measuring, the left button belongs to the tape; orbit with the right button.
+        mouseButtons={
+          measureMode
+            ? { LEFT: undefined as unknown as THREE.MOUSE, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.ROTATE }
+            : { LEFT: THREE.MOUSE.ROTATE, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.PAN }
+        }
+      />
       <CameraRig project={project} />
 
       <hemisphereLight intensity={0.55} color="#ffffff" groundColor="#3b3f48" />
@@ -62,10 +76,8 @@ export function Scene() {
       {project.items.filter((item) => !item.hidden).map((item) => (
         <ObjectMesh key={item.id} item={item} />
       ))}
-      {showDims &&
-        project.items
-          .filter((item) => !item.hidden && item.dims)
-          .map((item) => <Dimensions key={`dim-${item.id}`} item={item} project={project} />)}
+      <Measurements />
+      <MeasureTool key={measureMode ? 'measure-on' : 'measure-off'} />
       <Guides project={project} />
     </Canvas>
   )

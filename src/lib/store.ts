@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import type { FloorDesign, Guide, Item, ItemType, Project, SnapSettings, Wall } from './types'
+import type { FloorDesign, Guide, Item, ItemType, Measurement, Project, SnapSettings, Wall } from './types'
 import { DEFAULT_BASE, DEFAULT_CONSOLE, DEFAULT_PANEL, DEFAULT_SPEAKER, floorDesign, isFloorItem, typeInfo } from './types'
 import { findSupport, footprintArea, restingOn, settle } from './geometry'
 import { PRESETS, presetDims } from './presets'
@@ -101,6 +101,9 @@ interface State {
   showDims: boolean
   /** Bumped when a wood swatch image finishes loading so meshes rebuild their textures */
   textureVersion: number
+  /** Tape measure tool active */
+  measureMode: boolean
+  selectedMeasurementId: string | null
 
   createProject: (name: string) => void
   deleteProject: (id: string) => void
@@ -138,6 +141,12 @@ interface State {
   toggleGrid: () => void
   toggleDims: () => void
   bumpTextures: () => void
+  setMeasureMode: (on: boolean) => void
+  addMeasurement: (a: Measurement['a'], b: Measurement['b']) => void
+  removeMeasurement: (id: string) => void
+  updateMeasurement: (id: string, patch: Partial<Measurement>) => void
+  clearMeasurements: () => void
+  selectMeasurement: (id: string | null) => void
 }
 
 export const useStore = create<State>()(
@@ -169,6 +178,8 @@ export const useStore = create<State>()(
         showGrid: true,
         showDims: true,
         textureVersion: 0,
+        measureMode: false,
+        selectedMeasurementId: null,
 
         createProject: (name) => {
           const now = Date.now()
@@ -327,6 +338,23 @@ export const useStore = create<State>()(
         toggleGrid: () => set((s) => ({ showGrid: !s.showGrid })),
         toggleDims: () => set((s) => ({ showDims: !s.showDims })),
         bumpTextures: () => set((s) => ({ textureVersion: s.textureVersion + 1 })),
+        setMeasureMode: (on) => set({ measureMode: on, selectedMeasurementId: null, ...(on ? { selectedId: null } : {}) }),
+        addMeasurement: (a, b) => {
+          const m: Measurement = { id: uid(), a, b }
+          mutate((p) => ({ measurements: [...(p.measurements ?? []), m] }))
+          set({ selectedMeasurementId: m.id, showDims: true })
+        },
+        updateMeasurement: (id, patch) =>
+          mutate((p) => ({ measurements: (p.measurements ?? []).map((m) => (m.id === id ? { ...m, ...patch } : m)) })),
+        removeMeasurement: (id) => {
+          mutate((p) => ({ measurements: (p.measurements ?? []).filter((m) => m.id !== id) }))
+          set((s) => (s.selectedMeasurementId === id ? { selectedMeasurementId: null } : {}))
+        },
+        clearMeasurements: () => {
+          mutate(() => ({ measurements: [] }))
+          set({ selectedMeasurementId: null })
+        },
+        selectMeasurement: (id) => set({ selectedMeasurementId: id, ...(id ? { selectedId: null } : {}) }),
       }
     },
     {

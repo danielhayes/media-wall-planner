@@ -5,6 +5,7 @@ import type { FloorDesign, ItemType } from '../lib/types'
 import { PRESETS } from '../lib/presets'
 import { Check, DimInput, Field } from './inputs'
 import { formatInches } from '../lib/units'
+import { measureLabel } from '../lib/measure'
 
 const GRID_OPTIONS = [0.125, 0.25, 0.5, 1, 2, 3, 4, 6, 12]
 
@@ -14,7 +15,9 @@ export function Sidebar() {
   const {
     createProject, deleteProject, selectProject, renameProject, importProject,
     updateWall, updateProject, updateSnap, updateFloor, addItem, select, toggleHidden,
+    removeMeasurement, clearMeasurements, selectMeasurement,
   } = useStore()
+  const selectedMeasurementId = useStore((s) => s.selectedMeasurementId)
   const floorFileRef = useRef<HTMLInputElement>(null)
   const [floorError, setFloorError] = useState<string | null>(null)
   const floor = project ? floorDesign(project) : null
@@ -254,6 +257,26 @@ export function Sidebar() {
               ))}
             </ul>
           </section>
+
+          {(project.measurements?.length ?? 0) > 0 && (
+            <section>
+              <h2>Measurements</h2>
+              <ul className="items">
+                {project.measurements!.map((m) => {
+                  const label = measureLabel(m.a, m.b)
+                  return (
+                    <li key={m.id} className={m.id === selectedMeasurementId ? 'active' : ''} onClick={() => selectMeasurement(m.id)}>
+                      <span className="name">{label.main}{label.breakdown ? <span className="muted"> · {label.breakdown}</span> : null}</span>
+                      <button className="eye" title="Remove this measurement" onClick={(e) => { e.stopPropagation(); removeMeasurement(m.id) }}>×</button>
+                    </li>
+                  )
+                })}
+              </ul>
+              <div className="row buttons">
+                <button onClick={clearMeasurements}>Clear all</button>
+              </div>
+            </section>
+          )}
         </>
       )}
     </aside>

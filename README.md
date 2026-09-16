@@ -77,11 +77,16 @@ produces a static site in `dist/`.
 - **Hide**: the eye button in the object list (or H) drops an object from the scene
   without deleting it. Hidden objects are ignored by snapping, stacking, and gap
   readouts until shown again.
-- **Dimension annotations**: each object can show any of width, height, depth, and its
-  offset from the left, right, bottom, or top of the wall, chosen per object in the
-  inspector. The Dims toolbar button shows or hides all of them.
+- **Tape measure**: the Measure button (or M) turns on a crosshair that snaps to object
+  corners, edge midpoints, and face centers, plus wall corners, the wall centerline,
+  and the floor edge. Press on one point and release on another, or click twice, to save
+  a dimension line with its length and an axis breakdown for diagonal lines. Shift
+  constrains to the dominant axis, Escape cancels, and right-drag orbits while measuring.
+  Drag a label to offset the dimension line away from the objects, with witness lines
+  bridging the gap like an architectural drawing. Click a label or list entry to select
+  a measurement and Delete removes it. The Dims toolbar button shows or hides them all.
 - **Keyboard**: arrow keys nudge the selected object by one grid step (Shift for four),
-  Delete removes it, H hides or shows it, Escape deselects.
+  Delete removes it, H hides or shows it, M toggles the tape measure, Escape deselects.
 
 ## Stack
 
@@ -105,7 +110,8 @@ zustand for state with local-storage persistence. There is no backend.
 - `src/components/BaseMesh.tsx` console base rendering
 - `src/components/ConsoleMesh.tsx` media console rendering: carcass, top, doors, slats
 - `src/components/SpeakerMesh.tsx` speaker rendering: veneer, grill, plinth
-- `src/components/Dimensions.tsx` per-object dimension lines
+- `src/lib/snapPoints.ts` tape measure snap targets
+- `src/components/MeasureTool.tsx` tape measure tool and saved measurements
 - `src/components/WoodSelect.tsx` the shared wood dropdown
 - `src/components/Sidebar.tsx`, `Inspector.tsx`, `Toolbar.tsx` the panels
 

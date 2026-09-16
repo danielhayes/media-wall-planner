@@ -140,3 +140,14 @@ button.primary:hover:not(:disabled) { background: #ffc26e; border-color: transpa
   border: 1px solid rgba(127, 216, 255, 0.5); border-radius: 4px;
   padding: 1px 6px; font-size: 11px; white-space: nowrap; font-variant-numeric: tabular-nums; user-select: none;
 }
+
+.dim-label.clickable { pointer-events: auto; cursor: grab; touch-action: none; }
+.dim-label.clickable:active { cursor: grabbing; }
+.dim-label.selected { color: var(--accent); border-color: var(--accent); }
+.dim-breakdown { font-size: 10px; opacity: 0.85; }
+.snap-tip {
+  background: rgba(20, 22, 27, 0.92); color: var(--accent);
+  border: 1px solid rgba(255, 180, 84, 0.5); border-radius: 4px;
+  padding: 1px 6px; font-size: 11px; white-space: nowrap; user-select: none;
+}
+.hint-inline { font-size: 11px; padding: 0 6px; }

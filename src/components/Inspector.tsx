@@ -1,5 +1,5 @@
 import { useProject, useSelectedItem, useStore } from '../lib/store'
-import { DEFAULT_CONSOLE, DIM_LABELS, baseDesign, consoleDesign, isFacadeFinish, isFloorItem, isSlatFinish, panelDesign, speakerDesign, typeInfo } from '../lib/types'
+import { DEFAULT_CONSOLE, baseDesign, consoleDesign, isFacadeFinish, isFloorItem, isSlatFinish, panelDesign, speakerDesign, typeInfo } from '../lib/types'
 import { WoodSelect } from './WoodSelect'
 import type { BaseDesign, ConsoleDesign, ConsoleFinish, PanelDesign, PanelPattern, SlatDirection, SpeakerDesign } from '../lib/types'
 import { PRESETS } from '../lib/presets'
@@ -11,7 +11,6 @@ export function Inspector() {
   const project = useProject()
   const item = useSelectedItem()
   const { updateItem, removeItem, duplicateItem, mirrorItem, centerItem, alignWithBase, toggleHidden } = useStore()
-  const showDims = useStore((s) => s.showDims)
 
   if (!project || !item) {
     return (
@@ -19,7 +18,7 @@ export function Inspector() {
         <section>
           <h2>Selection</h2>
           <p className="muted">Click an object in the scene or list to edit it. Drag objects to move them.</p>
-          <p className="muted">Keys: arrows nudge by one grid step (Shift for 4×). Delete removes. H hides or shows. Escape deselects.</p>
+          <p className="muted">Keys: arrows nudge by one grid step (Shift for 4×). Delete removes. H hides or shows. M toggles the tape measure. Escape deselects.</p>
           <p className="muted">Dragging a floor item carries whatever is stacked on it. Hold Alt/Option to drag it alone.</p>
         </section>
       </aside>
@@ -251,20 +250,6 @@ export function Inspector() {
         <Field label="Rotation (°)">
           <input type="number" step={1} value={item.rotation} onChange={(ev) => set({ rotation: parseFloat(ev.target.value) || 0 })} />
         </Field>
-      </section>
-
-      <section>
-        <h2>Dimensions shown</h2>
-        {DIM_LABELS.map(({ key, label }) => (
-          <Check
-            key={key}
-            label={label}
-            checked={!!item.dims?.[key]}
-            onChange={(v) => set({ dims: { ...item.dims, [key]: v } })}
-          />
-        ))}
-        {!showDims && <p className="muted">Dimension annotations are switched off in the toolbar (Dims).</p>}
-        {item.hidden && <p className="muted">Hidden objects do not show their dimensions.</p>}
       </section>
 
       <section>

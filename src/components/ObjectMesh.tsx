@@ -56,7 +56,7 @@ export function ObjectMesh({ item }: { item: Item }) {
   }, [item.color, item.type])
 
   const onPointerDown = (e: ThreeEvent<PointerEvent>) => {
-    if (e.button !== 0) return
+    if (e.button !== 0 || useStore.getState().measureMode) return
     e.stopPropagation()
     select(item.id)
     const plane = floor

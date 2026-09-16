@@ -134,26 +134,14 @@ export interface PanelDesign {
   slatColor: string
 }
 
-/** Which dimension annotations to draw for an item */
-export interface DimFlags {
-  width?: boolean
-  height?: boolean
-  depth?: boolean
-  left?: boolean
-  right?: boolean
-  bottom?: boolean
-  top?: boolean
+/** A tape-measure line saved with the project, between two snapped points (inches) */
+export interface Measurement {
+  id: string
+  a: [number, number, number]
+  b: [number, number, number]
+  /** Where the dimension line sits relative to the measured points; witness lines bridge the gap */
+  offset?: [number, number, number]
 }
-
-export const DIM_LABELS: { key: keyof DimFlags; label: string }[] = [
-  { key: 'width', label: 'Width' },
-  { key: 'height', label: 'Height' },
-  { key: 'depth', label: 'Depth' },
-  { key: 'left', label: 'Offset from left' },
-  { key: 'right', label: 'Offset from right' },
-  { key: 'bottom', label: 'Offset from bottom' },
-  { key: 'top', label: 'Offset from top' },
-]
 
 export interface Item {
   id: string
@@ -161,7 +149,6 @@ export interface Item {
   name: string
   /** Hidden items stay in the project but are left out of the scene, snapping, and stacking */
   hidden?: boolean
-  dims?: DimFlags
   /** Dimensions in inches */
   width: number
   height: number
@@ -274,6 +261,7 @@ export interface Project {
   /** How far the floor extends out from the wall (inches) */
   floorDepth: number
   floor?: FloorDesign
+  measurements?: Measurement[]
   snap: SnapSettings
   toeIn: number
   items: Item[]

@@ -17,6 +17,9 @@ export default function App() {
       if (target && (target.tagName === 'INPUT' || target.tagName === 'SELECT' || target.tagName === 'TEXTAREA')) return
       const s = useStore.getState()
       const p = s.currentId ? s.projects[s.currentId] : null
+      if (e.key === 'm' || e.key === 'M') return s.setMeasureMode(!s.measureMode)
+      if (s.selectedMeasurementId && (e.key === 'Delete' || e.key === 'Backspace')) return s.removeMeasurement(s.selectedMeasurementId)
+      if (e.key === 'Escape' && s.measureMode && !s.selectedId) return s.setMeasureMode(false)
       const item = p?.items.find((i) => i.id === s.selectedId)
       if (!p || !item) return
       if (e.key === 'Escape') return s.select(null)
