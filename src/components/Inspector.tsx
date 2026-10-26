@@ -1,9 +1,9 @@
 import { useProject, useSelectedItem, useStore } from '../lib/store'
-import { DEFAULT_CONSOLE, baseDesign, consoleDesign, isFacadeFinish, isFloorItem, isSlatFinish, panelDesign, speakerDesign, typeInfo } from '../lib/types'
+import { DEFAULT_CONSOLE, baseDesign, doorwayDesign, consoleDesign, isFacadeFinish, isFloorItem, isSlatFinish, panelDesign, speakerDesign, typeInfo } from '../lib/types'
 import { WoodSelect } from './WoodSelect'
-import type { BaseDesign, ConsoleDesign, ConsoleFinish, PanelDesign, PanelPattern, SlatDirection, SpeakerDesign } from '../lib/types'
+import type { BaseDesign, ConsoleDesign, ConsoleFinish, DoorwayDesign, PanelDesign, PanelPattern, SlatDirection, SpeakerDesign } from '../lib/types'
 import { PRESETS } from '../lib/presets'
-import { edges, findSupport, measure } from '../lib/geometry'
+import { doorwayConflicts, edges, findSupport, measure } from '../lib/geometry'
 import { formatInches } from '../lib/units'
 import { Check, DimInput, Field } from './inputs'
 
@@ -41,6 +41,11 @@ export function Inspector() {
   const spk = speakerDesign(item)
   const setSpk = (patch: Partial<SpeakerDesign>) => set({ speaker: { ...spk, ...patch } })
   const isBase = item.type === 'base'
+  const isDoorway = item.type === 'doorway'
+  const door = doorwayDesign(item)
+  const setDoor = (patch: Partial<DoorwayDesign>) => set({ doorway: { ...door, ...patch } })
+  const conflicts = doorwayConflicts(item, project.items)
+  const intruders = isDoorway ? project.items.filter((o) => doorwayConflicts(o, project.items).some((dw) => dw.id === item.id)) : []
   const base = baseDesign(item)
   const setBase = (patch: Partial<BaseDesign>) => set({ base: { ...base, ...patch } })
 
@@ -70,7 +75,7 @@ export function Inspector() {
             ))}
           </select>
         </Field>
-        <Field label={isPanel ? 'Background color' : isConsole ? 'Body color' : isSpeaker ? 'Cabinet color' : 'Color'}><input type="color" value={item.color} onChange={(ev) => set({ color: ev.target.value })} /></Field>
+        <Field label={isPanel ? 'Background color' : isConsole ? 'Body color' : isSpeaker ? 'Cabinet color' : isDoorway ? 'Casing color' : 'Color'}><input type="color" value={item.color} onChange={(ev) => set({ color: ev.target.value })} /></Field>
       </section>
 
       {isConsole && (
@@ -132,6 +137,20 @@ export function Inspector() {
               </label>
             </span>
           </Field>
+        </section>
+      )}
+
+      {isDoorway && (
+        <section>
+          <h2>Doorway</h2>
+          <Check label="Casing (trim around the opening)" checked={door.casing} onChange={(v) => setDoor({ casing: v })} />
+          {door.casing && (
+            <Field label="Casing width"><DimInput value={door.casingWidth} min={0.25} onChange={(v) => setDoor({ casingWidth: v })} /></Field>
+          )}
+          <p className="muted">The opening is cut through the wall; the baseboard stops at the casing. Drag along the wall, or Mirror to copy it to the other side.</p>
+          {intruders.length > 0 && (
+            <p className="error">In the doorway: {intruders.map((o) => o.name).join(', ')}</p>
+          )}
         </section>
       )}
 
@@ -227,7 +246,7 @@ export function Inspector() {
         <h2>Size</h2>
         <Field label="Width"><DimInput value={item.width} min={0.25} onChange={(v) => set({ width: v })} /></Field>
         <Field label="Height"><DimInput value={item.height} min={0.25} onChange={(v) => set({ height: v })} /></Field>
-        <Field label="Depth"><DimInput value={item.depth} min={0.25} onChange={(v) => set({ depth: v })} /></Field>
+        {!isDoorway && <Field label="Depth"><DimInput value={item.depth} min={0.25} onChange={(v) => set({ depth: v })} /></Field>}
       </section>
 
       <section>
@@ -235,7 +254,7 @@ export function Inspector() {
         <Field label="Center from left"><DimInput value={item.x} onChange={(v) => set({ x: v })} /></Field>
         <Field label="Left edge"><DimInput value={e.left} onChange={(v) => set({ x: v + (item.x - e.left) })} /></Field>
         <Field label="Right edge"><DimInput value={e.right} onChange={(v) => set({ x: v - (e.right - item.x) })} /></Field>
-        {floor ? (
+        {isDoorway ? null : floor ? (
           <>
             <Field label="Back from wall" hint="Distance from the wall face to the back of the object"><DimInput value={e.back} min={0} onChange={(v) => set({ z: v + (item.z - e.back) })} /></Field>
             <Field label="Bottom elevation"><DimInput value={item.y} onChange={() => {}} disabled title="Floor items rest on the floor or on the object beneath them" /></Field>
@@ -247,13 +266,18 @@ export function Inspector() {
             <Field label="Mount gap" hint={isPanel ? 'Space between the wall and the back of the panel' : 'Space between the back of the item and the wall, or a panel behind it'}><DimInput value={item.mountGap} min={0} onChange={(v) => set({ mountGap: v })} /></Field>
           </>
         )}
-        <Field label="Rotation (°)">
-          <input type="number" step={1} value={item.rotation} onChange={(ev) => set({ rotation: parseFloat(ev.target.value) || 0 })} />
-        </Field>
+        {!isDoorway && (
+          <Field label="Rotation (°)">
+            <input type="number" step={1} value={item.rotation} onChange={(ev) => set({ rotation: parseFloat(ev.target.value) || 0 })} />
+          </Field>
+        )}
       </section>
 
       <section>
         <h2>Measurements</h2>
+        {conflicts.length > 0 && (
+          <p className="error">Overlaps doorway: {conflicts.map((o) => o.name).join(', ')}</p>
+        )}
         <dl className="measures">
           <dt>Gap to wall left</dt><dd className={m.leftGap < 0 ? 'bad' : ''}>{formatInches(m.leftGap)}</dd>
           <dt>Gap to wall right</dt><dd className={m.rightGap < 0 ? 'bad' : ''}>{formatInches(m.rightGap)}</dd>

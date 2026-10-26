@@ -25,7 +25,11 @@ produces a static site in `dist/`.
   custom photo of your own flooring tiled at a real-world width. The floor grid can be
   toggled from the toolbar.
 - **Objects**: TV, wall panel, media console, console base, equipment rack, speaker,
-  subwoofer.
+  subwoofer, doorway.
+- **Doorways** are openings cut through the wall. Set width and height, drag along the
+  wall, and Mirror to copy one to the other side. Optional casing (trim) of adjustable
+  width is painted the doorway's color, and the baseboard stops at it. Objects may still
+  overlap a doorway; the inspector warns when they do.
   Pick a size preset, then edit width, height, depth, and color per object.
 - **Wall panels** mount on the wall behind the TV at any height. Each panel has a
   pattern (solid, vertical slats, horizontal slats, or diagonal slats running either

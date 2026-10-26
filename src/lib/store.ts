@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { FloorDesign, Guide, Item, ItemType, Measurement, Project, SnapSettings, Wall } from './types'
-import { DEFAULT_BASE, DEFAULT_CONSOLE, DEFAULT_PANEL, DEFAULT_SPEAKER, floorDesign, isFloorItem, typeInfo } from './types'
+import { DEFAULT_BASE, DEFAULT_CONSOLE, DEFAULT_DOORWAY, DEFAULT_PANEL, DEFAULT_SPEAKER, floorDesign, isFloorItem, typeInfo } from './types'
 import { findSupport, footprintArea, restingOn, settle } from './geometry'
 import { PRESETS, presetDims } from './presets'
 
@@ -46,11 +46,12 @@ export function newItem(type: ItemType, overrides: Partial<Item> = {}): Item {
     y: 0,
     z: 20,
     rotation: 0,
-    mountGap: type === 'panel' ? 0 : 2,
+    mountGap: type === 'panel' || type === 'doorway' ? 0 : 2,
     ...(type === 'panel' ? { panel: { ...DEFAULT_PANEL } } : {}),
     ...(type === 'base' ? { base: { ...DEFAULT_BASE } } : {}),
     ...(type === 'console' ? { console: { ...DEFAULT_CONSOLE } } : {}),
     ...(type === 'speaker' ? { speaker: { ...DEFAULT_SPEAKER } } : {}),
+    ...(type === 'doorway' ? { doorway: { ...DEFAULT_DOORWAY } } : {}),
     ...overrides,
   }
 }
@@ -234,7 +235,7 @@ export const useStore = create<State>()(
             ...dims,
             ...(presetConsole ? { console: { ...DEFAULT_CONSOLE, ...presetConsole } } : {}),
             name: count ? `${typeInfo(type).label} ${count + 1}` : typeInfo(type).label,
-            x: p.wall.width / 2,
+            x: type === 'doorway' ? Math.min(p.wall.width / 2, dims.width / 2 + 12) : p.wall.width / 2,
             y: type === 'tv' || type === 'panel' ? Math.max(0, p.wall.height / 2 - preset.height / 2) : 0,
             z: (p.wall.baseboard.enabled ? p.wall.baseboard.depth : 0) + preset.depth / 2,
           })

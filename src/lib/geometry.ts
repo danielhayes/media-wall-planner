@@ -1,5 +1,5 @@
 import type { Guide, Item, Project, SnapSettings, Wall } from './types'
-import { isFloorItem } from './types'
+import { WALL_THICKNESS, doorwayDesign, isFloorItem } from './types'
 import { roundTo } from './units'
 
 /** Axis-aligned half extents of an item's footprint after yaw rotation. */
@@ -90,6 +90,14 @@ export function settle(items: Item[], wall: Wall, floorDepth = Infinity): Item[]
       item.y = support ? edges(support).top : 0
       const { halfD } = footprint(item)
       item.z = Math.min(Math.max(item.z, minZ(item, wall)), Math.max(minZ(item, wall), floorDepth - halfD))
+    } else if (item.type === 'doorway') {
+      // An opening in the wall: always on the floor, never taller than the wall, sitting inside the slab.
+      item.y = 0
+      item.height = Math.min(item.height, wall.height - 0.5)
+      item.depth = WALL_THICKNESS
+      item.mountGap = 0
+      item.rotation = 0
+      item.z = -WALL_THICKNESS / 2
     } else {
       item.y = Math.min(Math.max(item.y, 0), Math.max(0, wall.height - item.height))
       item.z = behindFront(item, items) + item.mountGap + item.depth / 2
@@ -269,4 +277,57 @@ export function restingOn(id: string, items: Item[]): Set<string> {
     frontier = next
   }
   return carried
+}
+
+/** Left/right extents of each visible doorway, merged where they overlap and clamped to the wall. */
+export function doorwayOpenings(items: Item[], wall: Wall): { left: number; right: number; height: number }[] {
+  const raw = items
+    .filter((i) => i.type === 'doorway' && !i.hidden)
+    .map((i) => ({
+      left: Math.max(0, i.x - i.width / 2),
+      right: Math.min(wall.width, i.x + i.width / 2),
+      height: Math.min(i.height, wall.height - 0.5),
+    }))
+    .filter((o) => o.right - o.left > 0.1)
+    .sort((a, b) => a.left - b.left)
+  const out: typeof raw = []
+  for (const o of raw) {
+    const last = out[out.length - 1]
+    if (last && o.left <= last.right) {
+      last.right = Math.max(last.right, o.right)
+      last.height = Math.max(last.height, o.height)
+    } else out.push({ ...o })
+  }
+  return out
+}
+
+/** The spans along the wall where trim should run, skipping each doorway and its casing. */
+export function trimSpans(items: Item[], wall: Wall): [number, number][] {
+  const blocked = items
+    .filter((i) => i.type === 'doorway' && !i.hidden)
+    .map((i) => {
+      const d = doorwayDesign(i)
+      const c = d.casing ? d.casingWidth : 0
+      return [i.x - i.width / 2 - c, i.x + i.width / 2 + c] as [number, number]
+    })
+    .sort((a, b) => a[0] - b[0])
+  const spans: [number, number][] = []
+  let cursor = 0
+  for (const [l, r] of blocked) {
+    if (l > cursor + 0.05) spans.push([cursor, Math.min(l, wall.width)])
+    cursor = Math.max(cursor, r)
+  }
+  if (cursor < wall.width - 0.05) spans.push([cursor, wall.width])
+  return spans
+}
+
+/** Doorways whose opening this item intrudes into (same x range and overlapping height). */
+export function doorwayConflicts(item: Item, items: Item[]): Item[] {
+  if (item.type === 'doorway' || item.hidden) return []
+  const e = edges(item)
+  return items.filter((o) => {
+    if (o.type !== 'doorway' || o.hidden) return false
+    const oe = edges(o)
+    return oe.right > e.left + 1e-6 && oe.left < e.right - 1e-6 && oe.top > e.bottom + 1e-6 && e.top > 1e-6
+  })
 }

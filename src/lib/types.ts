@@ -1,4 +1,4 @@
-export type ItemType = 'tv' | 'panel' | 'console' | 'base' | 'rack' | 'speaker' | 'subwoofer'
+export type ItemType = 'tv' | 'panel' | 'console' | 'base' | 'rack' | 'speaker' | 'subwoofer' | 'doorway'
 
 export type ConsoleFinish = 'plain' | 'slats-horizontal' | 'slats-vertical' | 'weave' | 'constellation' | 'tune'
 
@@ -172,7 +172,26 @@ export interface Item {
   console?: ConsoleDesign
   /** Present on speakers only */
   speaker?: SpeakerDesign
+  /** Present on doorways only */
+  doorway?: DoorwayDesign
 }
+
+/** A doorway opening cut through the wall. Width and height come from the item. */
+export interface DoorwayDesign {
+  /** Draw casing (trim) around the opening */
+  casing: boolean
+  /** Casing width (inches) */
+  casingWidth: number
+}
+
+export const DEFAULT_DOORWAY: DoorwayDesign = { casing: true, casingWidth: 3.5 }
+
+export function doorwayDesign(item: Item): DoorwayDesign {
+  return { ...DEFAULT_DOORWAY, ...item.doorway }
+}
+
+/** Thickness of the wall slab, and therefore the depth of a doorway (inches) */
+export const WALL_THICKNESS = 4.5
 
 export interface Trim {
   enabled: boolean
@@ -281,6 +300,7 @@ export const ITEM_TYPES: { type: ItemType; label: string; color: string; floor: 
   { type: 'rack', label: 'Equipment rack', color: '#3d4450', floor: true },
   { type: 'speaker', label: 'Speaker', color: '#5b6b7a', floor: true },
   { type: 'subwoofer', label: 'Subwoofer', color: '#2c2f36', floor: true },
+  { type: 'doorway', label: 'Doorway', color: '#f4f2ec', floor: false },
 ]
 
 export function typeInfo(type: ItemType) {

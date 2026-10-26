@@ -60,6 +60,15 @@ export const PRESETS: Record<ItemType, Preset[]> = {
     { label: 'Center channel', width: 24, height: 8, depth: 12 },
     { label: 'Soundbar', width: 45, height: 2.5, depth: 4.5 },
   ],
+  doorway: [
+    { label: '36" × 80" door', width: 36, height: 80, depth: 4.5 },
+    { label: '32" × 80" door', width: 32, height: 80, depth: 4.5 },
+    { label: '30" × 80" door', width: 30, height: 80, depth: 4.5 },
+    { label: '36" × 96" tall door', width: 36, height: 96, depth: 4.5 },
+    { label: '48" × 80" cased opening', width: 48, height: 80, depth: 4.5 },
+    { label: '60" × 80" double door', width: 60, height: 80, depth: 4.5 },
+    { label: '72" × 80" double door', width: 72, height: 80, depth: 4.5 },
+  ],
   subwoofer: [
     { label: '10" sub', width: 14, height: 15, depth: 15 },
     { label: '12" sub', width: 16, height: 17, depth: 17 },

@@ -7,6 +7,7 @@ import { useProject, useStore } from '../lib/store'
 import type { Project } from '../lib/types'
 import { PLANK_PRESETS, floorDesign } from '../lib/types'
 import { imageTexture, plankTexture } from '../lib/floor'
+import { doorwayOpenings, trimSpans } from '../lib/geometry'
 import { ObjectMesh } from './ObjectMesh'
 import { MeasureTool, Measurements } from './MeasureTool'
 
@@ -84,25 +85,46 @@ export function Scene() {
 }
 
 function WallAndFloor({ project, showGrid }: { project: Project; showGrid: boolean }) {
-  const { wall, floorDepth, snap } = project
+  const { wall, floorDepth, snap, items } = project
   const thickness = 4.5
   const margin = 24
   const gridCell = snap.grid >= 1 ? snap.grid : 1
 
+  // The wall is one polygon whose bottom edge steps up and over each doorway, extruded to
+  // the slab thickness, so openings are real holes you can see through.
+  const openings = useMemo(() => doorwayOpenings(items, wall), [items, wall])
+  const wallGeometry = useMemo(() => {
+    const shape = new THREE.Shape()
+    shape.moveTo(0, 0)
+    for (const o of openings) {
+      shape.lineTo(o.left, 0)
+      shape.lineTo(o.left, o.height)
+      shape.lineTo(o.right, o.height)
+      shape.lineTo(o.right, 0)
+    }
+    shape.lineTo(wall.width, 0)
+    shape.lineTo(wall.width, wall.height)
+    shape.lineTo(0, wall.height)
+    shape.closePath()
+    return new THREE.ExtrudeGeometry(shape, { depth: thickness, bevelEnabled: false })
+  }, [openings, wall.width, wall.height, thickness])
+  useEffect(() => () => wallGeometry.dispose(), [wallGeometry])
+  const baseboardSpans = useMemo(() => trimSpans(items, wall), [items, wall])
+
   return (
     <group>
-      {/* Wall slab */}
-      <mesh position={[wall.width / 2, wall.height / 2, -thickness / 2]} receiveShadow>
-        <boxGeometry args={[wall.width, wall.height, thickness]} />
+      {/* Wall slab, front face on z = 0 */}
+      <mesh geometry={wallGeometry} position={[0, 0, -thickness]} receiveShadow>
         <meshStandardMaterial color={wall.color} roughness={0.95} />
       </mesh>
-      {/* Baseboard */}
-      {wall.baseboard.enabled && (
-        <mesh position={[wall.width / 2, wall.baseboard.height / 2, wall.baseboard.depth / 2]} castShadow receiveShadow>
-          <boxGeometry args={[wall.width, wall.baseboard.height, wall.baseboard.depth]} />
-          <meshStandardMaterial color={wall.trimColor} roughness={0.7} />
-        </mesh>
-      )}
+      {/* Baseboard, interrupted by doorways and their casing */}
+      {wall.baseboard.enabled &&
+        baseboardSpans.map(([l, r]) => (
+          <mesh key={`${l}-${r}`} position={[(l + r) / 2, wall.baseboard.height / 2, wall.baseboard.depth / 2]} castShadow receiveShadow>
+            <boxGeometry args={[r - l, wall.baseboard.height, wall.baseboard.depth]} />
+            <meshStandardMaterial color={wall.trimColor} roughness={0.7} />
+          </mesh>
+        ))}
       {/* Crown moulding */}
       {wall.crown.enabled && (
         <mesh position={[wall.width / 2, wall.height - wall.crown.height / 2, wall.crown.depth / 2]} castShadow receiveShadow>

@@ -12,6 +12,7 @@ import { PanelMesh } from './PanelMesh'
 import { BaseMesh } from './BaseMesh'
 import { ConsoleMesh } from './ConsoleMesh'
 import { SpeakerMesh } from './SpeakerMesh'
+import { DoorwayMesh } from './DoorwayMesh'
 
 interface DragState {
   /** Floor plane for floor items, wall plane for wall-mounted items */
@@ -103,7 +104,11 @@ export function ObjectMesh({ item }: { item: Item }) {
       return
     }
     const result = snapPosition(item, proposed, project)
-    updateItem(item.id, floor ? { x: result.x, z: result.z } : { x: result.x, y: result.y }, d.carry)
+    updateItem(
+      item.id,
+      floor ? { x: result.x, z: result.z } : item.type === 'doorway' ? { x: result.x } : { x: result.x, y: result.y },
+      d.carry,
+    )
     d.moved = true
     setGuides(result.guides)
   }
@@ -141,6 +146,8 @@ export function ObjectMesh({ item }: { item: Item }) {
         <ConsoleMesh item={item} selected={selected} />
       ) : item.type === 'speaker' ? (
         <SpeakerMesh item={item} selected={selected} />
+      ) : item.type === 'doorway' ? (
+        <DoorwayMesh item={item} selected={selected} />
       ) : (
         <mesh position={[0, item.height / 2, 0]} castShadow receiveShadow>
           <boxGeometry args={[item.width, item.height, item.depth]} />
