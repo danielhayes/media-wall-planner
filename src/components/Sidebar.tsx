@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react'
 import { useProject, useStore } from '../lib/store'
+import { FilePanel } from './FilePanel'
 import { ITEM_TYPES, PLANK_PRESETS, floorDesign, typeInfo } from '../lib/types'
 import type { FloorDesign, ItemType } from '../lib/types'
 import { PRESETS } from '../lib/presets'
@@ -11,9 +12,7 @@ const GRID_OPTIONS = [0.125, 0.25, 0.5, 1, 2, 3, 4, 6, 12]
 
 export function Sidebar() {
   const project = useProject()
-  const projects = useStore((s) => s.projects)
   const {
-    createProject, deleteProject, selectProject, renameProject, importProject,
     updateWall, updateProject, updateSnap, updateFloor, addItem, select, toggleHidden,
     removeMeasurement, clearMeasurements, selectMeasurement,
   } = useStore()
@@ -40,89 +39,11 @@ export function Sidebar() {
   const selectedId = useStore((s) => s.selectedId)
   const [addType, setAddType] = useState<ItemType>('tv')
   const [addPreset, setAddPreset] = useState(0)
-  const fileRef = useRef<HTMLInputElement>(null)
-  const [importError, setImportError] = useState<string | null>(null)
-  const [confirmDelete, setConfirmDelete] = useState(false)
 
-  const onExport = async () => {
-    if (!project) return
-    const json = JSON.stringify(project, null, 2)
-    const suggestedName = `${project.name.replace(/[^\w-]+/g, '_')}.json`
-    // Chrome and Edge: a real save dialog via the File System Access API.
-    // Other browsers, and users who cancel, fall through to a plain download.
-    const picker = (window as unknown as { showSaveFilePicker?: (o: unknown) => Promise<FileSystemFileHandle> }).showSaveFilePicker
-    if (picker) {
-      try {
-        const handle = await picker.call(window, {
-          suggestedName,
-          types: [{ description: 'Media wall project', accept: { 'application/json': ['.json'] } }],
-        })
-        const writable = await handle.createWritable()
-        await writable.write(json)
-        await writable.close()
-        return
-      } catch (err) {
-        if ((err as DOMException).name === 'AbortError') return
-        // Picker unavailable in this context; use the download fallback.
-      }
-    }
-    const blob = new Blob([json], { type: 'application/json' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = suggestedName
-    a.click()
-    URL.revokeObjectURL(url)
-  }
-
-  const onImportFile = async (file: File | undefined) => {
-    if (!file) return
-    const err = importProject(await file.text())
-    setImportError(err)
-    if (fileRef.current) fileRef.current.value = ''
-  }
-
-  const list = Object.values(projects).sort((a, b) => b.updatedAt - a.updatedAt)
 
   return (
     <aside className="sidebar">
-      <section>
-        <h2>Project</h2>
-        <div className="row">
-          <select value={project?.id ?? ''} onChange={(e) => { selectProject(e.target.value); setConfirmDelete(false) }}>
-            {list.map((p) => (
-              <option key={p.id} value={p.id}>{p.name}</option>
-            ))}
-          </select>
-        </div>
-        {project && (
-          <Field label="Name">
-            <input
-              type="text"
-              value={project.name}
-              onChange={(e) => renameProject(project.id, e.target.value)}
-              onBlur={(e) => { if (!e.target.value.trim()) renameProject(project.id, 'Untitled wall') }}
-            />
-          </Field>
-        )}
-        <div className="row buttons">
-          <button onClick={() => { createProject('New wall'); setConfirmDelete(false) }}>New</button>
-          {confirmDelete ? (
-            <>
-              <button className="danger" onClick={() => { if (project) deleteProject(project.id); setConfirmDelete(false) }}>Confirm delete</button>
-              <button onClick={() => setConfirmDelete(false)}>Cancel</button>
-            </>
-          ) : (
-            <button disabled={!project} className="danger" onClick={() => setConfirmDelete(true)}>Delete</button>
-          )}
-        </div>
-        <div className="row buttons">
-          <button disabled={!project} onClick={onExport}>Export JSON</button>
-          <button onClick={() => fileRef.current?.click()}>Import JSON</button>
-          <input ref={fileRef} type="file" accept="application/json,.json" hidden onChange={(e) => onImportFile(e.target.files?.[0])} />
-        </div>
-        {importError && <p className="error">{importError}</p>}
-      </section>
+      <FilePanel />
 
       {project && (
         <>

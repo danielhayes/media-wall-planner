@@ -151,3 +151,12 @@ button.primary:hover:not(:disabled) { background: #ffc26e; border-color: transpa
   padding: 1px 6px; font-size: 11px; white-space: nowrap; user-select: none;
 }
 .hint-inline { font-size: 11px; padding: 0 6px; }
+
+.file-title { display: flex; align-items: center; gap: 6px; margin: 2px 0 8px; font-size: 14px; font-weight: 600; }
+.file-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dirty-dot { color: var(--accent); font-size: 10px; }
+.prompt { background: var(--panel-2); border: 1px solid var(--accent); border-radius: 6px; padding: 6px 8px; margin: 8px 0; }
+.prompt p { margin: 0 0 6px; }
+.legacy { background: var(--panel-2); border: 1px solid var(--border); border-radius: 6px; padding: 6px 8px; margin: 8px 0; }
+.legacy p { margin: 0 0 6px; }
+.error .eye { color: var(--danger); }

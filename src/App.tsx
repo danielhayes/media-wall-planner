@@ -5,18 +5,49 @@ import { Inspector } from './components/Inspector'
 import { Toolbar } from './components/Toolbar'
 import { useProject, useStore } from './lib/store'
 import { isFloorItem } from './lib/types'
+import { request, saveProject, saveProjectAs } from './lib/fileOps'
 
 export default function App() {
   const project = useProject()
-  const createProject = useStore((s) => s.createProject)
+  const dirty = useStore((s) => s.dirty)
+  const fileName = useStore((s) => s.fileName)
+
+  // Window title and the close-tab warning follow the file state
+  useEffect(() => {
+    const name = fileName ? fileName.replace(/\.json$/i, '') : project?.name || 'Untitled'
+    document.title = `${dirty ? '• ' : ''}${name} – Media Wall Planner`
+  }, [dirty, fileName, project?.name])
+  useEffect(() => {
+    if (!dirty) return
+    const onBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault()
+      e.returnValue = ''
+    }
+    window.addEventListener('beforeunload', onBeforeUnload)
+    return () => window.removeEventListener('beforeunload', onBeforeUnload)
+  }, [dirty])
 
   // Keyboard nudging and deletion for the selected object
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      // File shortcuts work even while typing in a field
+      if (e.metaKey || e.ctrlKey) {
+        const k = e.key.toLowerCase()
+        if (k === 's') {
+          e.preventDefault()
+          void (e.shiftKey ? saveProjectAs() : saveProject())
+          return
+        }
+        if (k === 'o') {
+          e.preventDefault()
+          request({ kind: 'open' })
+          return
+        }
+      }
       const target = e.target as HTMLElement | null
       if (target && (target.tagName === 'INPUT' || target.tagName === 'SELECT' || target.tagName === 'TEXTAREA')) return
       const s = useStore.getState()
-      const p = s.currentId ? s.projects[s.currentId] : null
+      const p = s.project
       if (e.key === 'm' || e.key === 'M') return s.setMeasureMode(!s.measureMode)
       if (s.selectedMeasurementId && (e.key === 'Delete' || e.key === 'Backspace')) return s.removeMeasurement(s.selectedMeasurementId)
       if (e.key === 'Escape' && s.measureMode && !s.selectedId) return s.setMeasureMode(false)
@@ -52,8 +83,11 @@ export default function App() {
         ) : (
           <div className="empty">
             <h1>Media Wall Planner</h1>
-            <p>Create a project to start laying out your wall.</p>
-            <button className="primary" onClick={() => createProject('New wall')}>New project</button>
+            <p>Start a new wall or open a saved project file.</p>
+            <div className="row buttons">
+              <button className="primary" onClick={() => request({ kind: 'new' })}>New project</button>
+              <button onClick={() => request({ kind: 'open' })}>Open…</button>
+            </div>
           </div>
         )}
       </main>

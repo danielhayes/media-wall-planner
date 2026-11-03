@@ -16,8 +16,13 @@ produces a static site in `dist/`.
 
 ## How it works
 
-- **Projects** live in the browser's local storage. Use Export / Import JSON to move
-  a project between machines or keep a backup.
+- **Files**: a project is a `.json` file on disk. New, Open, Save, and Save As live in
+  the File section (⌘S / Ctrl+S saves, ⇧⌘S saves as, ⌘O opens). In Chrome and Edge the
+  app keeps a handle to the open file, so Save writes in place and the Recent list
+  reopens files with one click. Other browsers download on Save and ask for the file on
+  Open. The working copy is cached in the browser so a closed tab loses nothing, and a
+  dot beside the name marks unsaved changes. Projects from the earlier browser-storage
+  version are offered for export to a folder on first launch.
 - **Wall** settings: width, height, color, floor depth, and optional baseboard and
   crown moulding with their sizes. Trim depth keeps floor items from sitting inside it.
 - **Floor**: a solid color, procedurally generated hardwood planks (dark oak, walnut,

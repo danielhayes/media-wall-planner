@@ -87,9 +87,23 @@ function sampleProject(): Project {
   }
 }
 
+export type PendingAction = { kind: 'new' } | { kind: 'open' } | { kind: 'recent'; id: string } | { kind: 'legacy'; id: string }
+
 interface State {
-  projects: Record<string, Project>
-  currentId: string | null
+  /** The one open project. The file on disk is the source of truth; this is the working copy. */
+  project: Project | null
+  /** Unsaved changes since the last open or save */
+  dirty: boolean
+  /** Name of the file the project was opened from or saved to */
+  fileName: string | null
+  /** Recent-list id of that file, used to find its handle after a reload */
+  fileId: string | null
+  /** Projects carried over from the browser-storage version, until exported or discarded */
+  legacyProjects: Project[]
+  fileError: string | null
+  /** An action waiting on the user to deal with unsaved changes */
+  pending: PendingAction | null
+  recentVersion: number
   selectedId: string | null
   dragging: boolean
   guides: Guide[]
@@ -106,11 +120,14 @@ interface State {
   measureMode: boolean
   selectedMeasurementId: string | null
 
-  createProject: (name: string) => void
-  deleteProject: (id: string) => void
-  selectProject: (id: string) => void
-  renameProject: (id: string, name: string) => void
-  importProject: (json: string) => string | null
+  newProject: () => void
+  openProject: (project: Project, fileName: string | null, fileId: string | null) => void
+  markSaved: (fileName: string, fileId: string | null) => void
+  setFileError: (msg: string | null) => void
+  setPending: (p: PendingAction | null) => void
+  bumpRecent: () => void
+  removeLegacy: (id: string) => void
+  discardLegacy: () => void
   updateProject: (patch: Partial<Pick<Project, 'floorDepth' | 'snap' | 'toeIn'>>) => void
   updateWall: (patch: Partial<Wall>) => void
   updateSnap: (patch: Partial<SnapSettings>) => void
@@ -153,21 +170,24 @@ interface State {
 export const useStore = create<State>()(
   persist(
     (set, get) => {
-      const sample = sampleProject()
-
       const mutate = (fn: (p: Project) => Partial<Project> | void) =>
         set((s) => {
-          if (!s.currentId) return {}
-          const p = s.projects[s.currentId]
-          const patch = fn(p) ?? {}
-          const next: Project = { ...p, ...patch, updatedAt: Date.now() }
+          if (!s.project) return {}
+          const patch = fn(s.project) ?? {}
+          const next: Project = { ...s.project, ...patch, updatedAt: Date.now() }
           next.items = settle(next.items, next.wall, next.floorDepth)
-          return { projects: { ...s.projects, [p.id]: next } }
+          return { project: next, dirty: true }
         })
 
       return {
-        projects: { [sample.id]: sample },
-        currentId: sample.id,
+        project: sampleProject(),
+        dirty: false,
+        fileName: null,
+        fileId: null,
+        legacyProjects: [],
+        fileError: null,
+        pending: null,
+        recentVersion: 0,
         selectedId: null,
         dragging: false,
         guides: [],
@@ -182,11 +202,11 @@ export const useStore = create<State>()(
         measureMode: false,
         selectedMeasurementId: null,
 
-        createProject: (name) => {
+        newProject: () => {
           const now = Date.now()
           const p: Project = {
             id: uid(),
-            name: name || 'Untitled wall',
+            name: 'Untitled wall',
             createdAt: now,
             updatedAt: now,
             wall: defaultWall(),
@@ -195,30 +215,17 @@ export const useStore = create<State>()(
             toeIn: 0,
             items: [],
           }
-          set((s) => ({ projects: { ...s.projects, [p.id]: p }, currentId: p.id, selectedId: null }))
+          set({ project: p, dirty: false, fileName: null, fileId: null, selectedId: null, selectedMeasurementId: null, fileError: null, pending: null })
         },
-        deleteProject: (id) =>
-          set((s) => {
-            const projects = { ...s.projects }
-            delete projects[id]
-            const currentId = s.currentId === id ? (Object.keys(projects)[0] ?? null) : s.currentId
-            return { projects, currentId, selectedId: null }
-          }),
-        selectProject: (id) => set({ currentId: id, selectedId: null }),
-        renameProject: (id, name) =>
-          set((s) => ({ projects: { ...s.projects, [id]: { ...s.projects[id], name, updatedAt: Date.now() } } })),
-        importProject: (json) => {
-          try {
-            const raw = JSON.parse(json) as Project
-            if (!raw.wall || !Array.isArray(raw.items)) return 'That file does not look like a media wall project.'
-            const p: Project = { ...raw, id: uid(), updatedAt: Date.now(), snap: { ...DEFAULT_SNAP, ...raw.snap } }
-            p.items = settle(p.items, p.wall, p.floorDepth)
-            set((s) => ({ projects: { ...s.projects, [p.id]: p }, currentId: p.id, selectedId: null }))
-            return null
-          } catch {
-            return 'Could not parse that file as JSON.'
-          }
-        },
+        openProject: (project, fileName, fileId) =>
+          set({ project, dirty: false, fileName, fileId, selectedId: null, selectedMeasurementId: null, fileError: null, pending: null }),
+        markSaved: (fileName, fileId) =>
+          set((s) => ({ dirty: false, fileName, fileId, project: s.project ? { ...s.project, name: fileName.replace(/\.json$/i, '') } : s.project })),
+        setFileError: (fileError) => set({ fileError }),
+        setPending: (pending) => set({ pending }),
+        bumpRecent: () => set((s) => ({ recentVersion: s.recentVersion + 1 })),
+        removeLegacy: (id) => set((s) => ({ legacyProjects: s.legacyProjects.filter((p) => p.id !== id) })),
+        discardLegacy: () => set({ legacyProjects: [] }),
         updateProject: (patch) => mutate(() => patch),
         updateWall: (patch) => mutate((p) => ({ wall: { ...p.wall, ...patch } })),
         updateSnap: (patch) => mutate((p) => ({ snap: { ...p.snap, ...patch } })),
@@ -226,7 +233,7 @@ export const useStore = create<State>()(
 
         addItem: (type, presetIndex = 0) => {
           const preset = PRESETS[type][presetIndex] ?? PRESETS[type][0]
-          const p = get().currentId ? get().projects[get().currentId!] : null
+          const p = get().project
           if (!p) return
           const count = p.items.filter((i) => i.type === type).length
           const { console: presetConsole, label: _label, ...dims } = preset
@@ -360,9 +367,33 @@ export const useStore = create<State>()(
     },
     {
       name: 'media-wall-planner',
+      version: 2,
+      // Version 1 kept every project in browser storage. Carry the open one over as the
+      // working copy and keep the rest in a legacy list so they can be exported to files.
+      migrate: (persisted, version) => {
+        const old = persisted as Record<string, unknown>
+        if (version >= 2) return old
+        const projects = (old.projects ?? {}) as Record<string, Project>
+        const currentId = old.currentId as string | null
+        const current = currentId ? (projects[currentId] ?? null) : null
+        const { projects: _p, currentId: _c, ...prefs } = old
+        void _p
+        void _c
+        return {
+          ...prefs,
+          project: current,
+          dirty: current !== null,
+          fileName: null,
+          fileId: null,
+          legacyProjects: Object.values(projects).sort((a, b) => b.updatedAt - a.updatedAt),
+        }
+      },
       partialize: (s) => ({
-        projects: s.projects,
-        currentId: s.currentId,
+        project: s.project,
+        dirty: s.dirty,
+        fileName: s.fileName,
+        fileId: s.fileId,
+        legacyProjects: s.legacyProjects,
         projection: s.projection,
         showMeasurements: s.showMeasurements,
         showLabels: s.showLabels,
@@ -375,12 +406,9 @@ export const useStore = create<State>()(
 )
 
 export function useProject(): Project | null {
-  return useStore((s) => (s.currentId ? (s.projects[s.currentId] ?? null) : null))
+  return useStore((s) => s.project)
 }
 
 export function useSelectedItem(): Item | null {
-  return useStore((s) => {
-    const p = s.currentId ? s.projects[s.currentId] : null
-    return p?.items.find((i) => i.id === s.selectedId) ?? null
-  })
+  return useStore((s) => s.project?.items.find((i) => i.id === s.selectedId) ?? null)
 }
